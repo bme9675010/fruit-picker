@@ -253,6 +253,118 @@ export const FRUITS = [
       store: ['冷藏'],
     },
   },
+  {
+    id: 'peach', name: '水蜜桃', emoji: '🍑', season: '6–8 月',
+    names: ['a peach', 'fuzzy pink peaches', 'a white peach'],
+    tips: {
+      look: ['果形圓整、紅暈均勻', '底色由綠轉乳白或淡黃、絨毛細緻'],
+      touch: ['不要用手指捏（會壓傷），用手掌輕托感覺微軟有彈性'],
+      smell: ['香氣越濃越熟'],
+      avoid: ['壓傷出水、果柄處發黑'],
+      store: ['避免碰撞，常溫放 1–2 天後熟，吃前再冰 1–2 小時；久冰口感會變差'],
+    },
+  },
+  {
+    id: 'plum', name: '李子', emoji: '🟪', season: '5–7 月',
+    names: ['a plum', 'dark red plums', 'purple plums with a waxy bloom'],
+    tips: {
+      look: ['果皮顏色深而均勻、表面有白色果粉', '果形飽滿；紅肉李選紫黑色的'],
+      touch: ['輕捏有彈性'],
+      avoid: ['皺皮、裂果、軟爛'],
+      store: ['冷藏'],
+    },
+  },
+  {
+    id: 'cherry', name: '櫻桃', emoji: '🍒', season: '5–8 月、11–2 月（進口）',
+    names: ['cherries', 'dark red sweet cherries with stems', 'a bowl of cherries'],
+    tips: {
+      look: ['果色深紅到紫紅、有光澤', '果柄翠綠、果粒大而飽滿'],
+      touch: ['硬實有彈性'],
+      avoid: ['果柄發黑乾枯、表皮皺、壓傷'],
+      store: ['不洗直接冷藏，吃前再洗'],
+    },
+  },
+  {
+    id: 'lemon', name: '檸檬', emoji: '🍋', season: '全年（7–9 月盛產）',
+    names: ['a lemon', 'green lemons', 'yellow lemons'],
+    tips: {
+      look: ['表皮光滑油亮、皮薄、顏色均勻'],
+      touch: ['輕壓有彈性、拿起來沉代表汁多'],
+      avoid: ['表皮乾硬皺縮、局部軟爛'],
+      store: ['裝袋冷藏'],
+    },
+  },
+  {
+    id: 'mangosteen', name: '山竹', emoji: '🟣', season: '4–9 月（進口）',
+    names: ['a mangosteen', 'purple mangosteens with green caps', 'a round dark purple mangosteen with a thick green calyx', 'an opened mangosteen with white segments'],
+    tips: {
+      look: ['果皮紫紅到深紫、有光澤', '蒂頭翠綠完整'],
+      touch: ['輕壓果皮微軟有彈性；硬得像石頭的是放太久了'],
+      other: ['看底部的花瓣狀紋路有幾瓣，裡面的果肉就有幾瓣'],
+      avoid: ['果皮硬化、流出黃色汁液、蒂頭乾黑'],
+      store: ['冷藏，盡快吃'],
+    },
+  },
+  {
+    id: 'loquat', name: '枇杷', emoji: '🟠', season: '2–4 月',
+    names: ['loquats', 'small oval yellow-orange loquats with fuzzy skin', 'a cluster of loquats on a branch'],
+    tips: {
+      look: ['果皮橙黃、絨毛和白色果粉完整', '果形飽滿、果梗新鮮'],
+      touch: ['輕壓有彈性'],
+      avoid: ['碰傷的褐斑（枇杷很容易壓傷）、皺皮'],
+      store: ['不耐放，放陰涼處 1–2 天內吃完'],
+    },
+  },
+  {
+    id: 'blueberry', name: '藍莓', emoji: '🫐', season: '全年（進口）',
+    names: ['blueberries', 'a box of fresh blueberries', 'a pile of blueberries'],
+    tips: {
+      look: ['果實飽滿、深藍紫色、表面有均勻白色果粉', '大小均勻'],
+      other: ['輕搖盒子，藍莓會滾動代表乾爽沒有出水'],
+      avoid: ['盒底出水、發霉、果實皺縮'],
+      store: ['不洗直接冷藏，吃前再洗'],
+    },
+  },
+  {
+    id: 'durian', name: '榴槤', emoji: '🌰', season: '5–8 月（進口）',
+    names: ['a durian', 'a spiky green durian fruit', 'durians'],
+    tips: {
+      look: ['果刺尖挺、果蒂粗壯新鮮', '果殼的縫線明顯、微微裂開代表熟了'],
+      touch: ['捏住兩根相鄰的果刺，能稍微靠攏代表熟'],
+      smell: ['香氣濃郁；有酸味或酒味就是過熟'],
+      avoid: ['果殼大裂、果蒂乾枯'],
+      store: ['剝出果肉密封冷藏，或冷凍保存'],
+    },
+  },
+  {
+    id: 'coconut', name: '椰子', emoji: '🥥', season: '全年',
+    names: ['a green coconut', 'young coconuts', 'a brown coconut'],
+    tips: {
+      look: ['喝椰子水選青綠色的嫩椰、外皮光滑無裂'],
+      touch: ['拿起來沉；搖起來水聲小代表水是滿的'],
+      avoid: ['外皮黑斑、發霉、有裂縫'],
+      store: ['冷藏，打開後盡快喝完'],
+    },
+  },
+  {
+    id: 'rambutan', name: '紅毛丹', emoji: '🔴', season: '5–9 月（進口）',
+    names: ['rambutans', 'red hairy rambutan fruits', 'a bunch of rambutans'],
+    tips: {
+      look: ['果皮鮮紅', '軟刺（毛）挺直，尖端帶綠或鮮紅'],
+      touch: ['有彈性'],
+      avoid: ['毛變黑乾枯、果皮轉暗褐'],
+      store: ['裝袋冷藏，2–3 天內吃完'],
+    },
+  },
+  {
+    id: 'mulberry', name: '桑椹', emoji: '⚫', season: '3–4 月',
+    names: ['mulberries', 'dark purple mulberries', 'ripe black mulberry fruits'],
+    tips: {
+      look: ['顏色紫黑、果粒飽滿有光澤；紅色的還沒熟、偏酸'],
+      avoid: ['出水、壓爛、發霉'],
+      store: ['非常不耐放：不洗冷藏，1–2 天內吃完，或拿去做果醬'],
+    },
+  },
 ];
 
 export const VEGETABLES = [
@@ -426,7 +538,7 @@ export const VEGETABLES = [
     },
   },
   {
-    id: 'okra', name: '秋葵', emoji: '🌶️', season: '5–10 月',
+    id: 'okra', name: '秋葵', emoji: '🟩', season: '5–10 月',
     names: ['okra', 'small green okra pods with a pointed tip', 'a pile of okra'],
     tips: {
       look: ['翠綠、表面細絨毛完整', '長度約 8–10 公分的最嫩'],
@@ -453,6 +565,150 @@ export const VEGETABLES = [
       touch: ['拿起來有重量、輕壓有彈性'],
       avoid: ['裂果、軟爛、蒂頭發黑'],
       store: ['還沒全紅放常溫後熟，熟了再冷藏'],
+    },
+  },
+  {
+    id: 'zucchini', name: '櫛瓜', emoji: '🥒', season: '全年',
+    names: ['a zucchini', 'green zucchini squash', 'yellow zucchini'],
+    tips: {
+      look: ['表皮鮮綠或金黃、光滑有光澤', '中小型（約 20 公分）較嫩、粗細均勻'],
+      touch: ['硬挺'],
+      avoid: ['表皮軟皺、有凹陷'],
+      store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'lotus_root', name: '蓮藕', emoji: '🪷', season: '7–11 月',
+    names: ['a lotus root', 'lotus root sections', 'sliced lotus root showing holes'],
+    tips: {
+      look: ['外皮淡黃褐色、顏色自然；太白可能漂白過', '藕節粗短飽滿；切面孔洞大小均勻、沒有黑點'],
+      touch: ['拿起來沉、硬實'],
+      avoid: ['表面斑點多、切口發黑'],
+      store: ['帶泥用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'taro', name: '芋頭', emoji: '🟤', season: '8–11 月',
+    names: ['a taro root', 'a hairy brown taro corm with ring marks', 'peeled taro with purple speckles', 'large round taro roots'],
+    tips: {
+      look: ['外形勻稱、環紋明顯、鬚根少', '切面的紫紅色細點越多越香鬆'],
+      touch: ['同樣大小選較輕的，口感比較鬆'],
+      avoid: ['發芽、局部軟爛、有斑點'],
+      other: ['削皮時戴手套，黏液會讓手發癢'],
+      store: ['放常溫通風陰暗處，不要冰'],
+    },
+  },
+  {
+    id: 'chinese_yam', name: '山藥', emoji: '🤍', season: '11–3 月',
+    names: ['a Chinese yam', 'a long light brown hairy yam tuber', 'nagaimo yam', 'sliced white Chinese yam'],
+    tips: {
+      look: ['表皮完整、鬚根少、外形挺直粗細均勻', '切口潔白不變色'],
+      touch: ['拿起來沉'],
+      avoid: ['表皮有傷痕或斑點、切口變色腐爛'],
+      other: ['削皮時戴手套，黏液會讓手發癢'],
+      store: ['整根放常溫通風處；切開後包好冷藏'],
+    },
+  },
+  {
+    id: 'burdock', name: '牛蒡', emoji: '🪵', season: '11–3 月',
+    names: ['a burdock root', 'long thin brown burdock roots', 'gobo root'],
+    tips: {
+      look: ['外皮完整無裂、筆直、粗細均勻', '粗細約一元硬幣最好，太粗可能空心'],
+      touch: ['硬挺不軟'],
+      avoid: ['太粗、發軟、有黑斑'],
+      store: ['帶土用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'king_oyster', name: '杏鮑菇', emoji: '🍄', season: '全年',
+    names: ['king oyster mushrooms', 'thick white king trumpet mushrooms', 'eryngii mushrooms'],
+    tips: {
+      look: ['菌傘沒有完全張開、菇柄粗白', '表面乾爽'],
+      touch: ['硬實有彈性'],
+      avoid: ['表面出水黏滑、有黃斑'],
+      store: ['不洗，用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'shiitake', name: '香菇', emoji: '🍄', season: '全年',
+    names: ['shiitake mushrooms', 'brown shiitake mushroom caps', 'fresh shiitake mushrooms'],
+    tips: {
+      look: ['菌傘厚實、邊緣內捲', '菌褶白而整齊'],
+      touch: ['乾爽有彈性'],
+      smell: ['有香氣'],
+      avoid: ['菌褶變黃褐、潮濕黏滑'],
+      store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'enoki', name: '金針菇', emoji: '🍄', season: '全年',
+    names: ['enoki mushrooms', 'a cluster of long thin white enoki mushrooms with tiny caps', 'a pack of enoki mushrooms'],
+    tips: {
+      look: ['菇體潔白或乳白、菌傘小而完整', '根部不發黃'],
+      avoid: ['包裝內出水、變黃、黏滑'],
+      other: ['一定要煮熟再吃'],
+      store: ['原包裝冷藏，盡快吃完'],
+    },
+  },
+  {
+    id: 'asparagus', name: '蘆筍', emoji: '🌱', season: '3–10 月',
+    names: ['asparagus spears', 'a bundle of green asparagus', 'white asparagus'],
+    tips: {
+      look: ['筍尖緊密不散開、筆直', '綠蘆筍選翠綠、白蘆筍選潔白；切口濕潤'],
+      touch: ['硬挺、輕輕一彎就斷'],
+      avoid: ['筍尖鬆散、變軟、切口乾裂'],
+      store: ['濕紙巾包住切口、直立冷藏'],
+    },
+  },
+  {
+    id: 'green_beans', name: '四季豆', emoji: '🫛', season: '全年',
+    names: ['green beans', 'string beans', 'fresh green bean pods'],
+    tips: {
+      look: ['豆莢翠綠飽滿、粗細均勻、沒有斑點'],
+      touch: ['硬挺，一折就斷、聲音清脆'],
+      avoid: ['豆子明顯凸出（老了）、乾皺'],
+      other: ['一定要煮熟再吃'],
+      store: ['裝袋冷藏'],
+    },
+  },
+  {
+    id: 'edamame', name: '毛豆', emoji: '🫛', season: '全年',
+    names: ['edamame', 'green soybean pods with fuzz', 'fresh edamame pods'],
+    tips: {
+      look: ['豆莢翠綠、絨毛完整、豆粒飽滿'],
+      avoid: ['豆莢發黃、有黑斑'],
+      store: ['冷藏；燙熟後可冷凍'],
+    },
+  },
+  {
+    id: 'garlic', name: '大蒜', emoji: '🧄', season: '2–4 月',
+    names: ['a garlic bulb', 'heads of garlic', 'white garlic bulbs'],
+    tips: {
+      look: ['外皮乾燥完整、蒜瓣飽滿'],
+      touch: ['硬實、拿起來沉'],
+      avoid: ['發芽、發軟、發霉'],
+      store: ['放通風陰涼處'],
+    },
+  },
+  {
+    id: 'chili', name: '辣椒', emoji: '🌶️', season: '全年',
+    names: ['red chili peppers', 'hot chili peppers', 'small red and green chilies'],
+    tips: {
+      look: ['表皮光亮、顏色鮮豔、蒂頭鮮綠'],
+      touch: ['硬挺飽滿'],
+      other: ['一般來說越小越尖越辣'],
+      avoid: ['表皮皺縮、軟爛、有斑點'],
+      store: ['冷藏，或整根冷凍'],
+    },
+  },
+  {
+    id: 'water_bamboo', name: '茭白筍', emoji: '🎍', season: '5–10 月',
+    names: ['water bamboo shoots', 'Manchurian wild rice stems', 'peeled white water bamboo shoots'],
+    tips: {
+      look: ['筍殼翠綠、筍身潔白', '剝開的筍肉白嫩、沒有黑點（有黑點代表老了）'],
+      touch: ['肥嫩硬實、不軟'],
+      avoid: ['筍肉黑點多、切口乾'],
+      store: ['連殼用紙包好冷藏'],
     },
   },
 ];
