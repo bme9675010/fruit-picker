@@ -1,5 +1,5 @@
-// 水果資料：names 是給 CLIP 比對用的英文描述，其餘是畫面上顯示的挑選技巧。
-// 新增水果後要重新執行 tools/build-embeddings.mjs 產生 embeddings.json。
+// 蔬果資料：names 是給 CLIP 比對用的英文描述，其餘是畫面上顯示的挑選技巧。
+// 新增蔬果後要重新執行 tools/build-embeddings.mjs 產生 embeddings.json。
 
 export const FRUITS = [
   {
@@ -235,7 +235,7 @@ export const FRUITS = [
   },
   {
     id: 'melon', name: '哈密瓜／洋香瓜', emoji: '🍈', season: '4–11 月',
-    names: ['a cantaloupe', 'a muskmelon', 'a netted melon'],
+    names: ['a cantaloupe', 'a muskmelon', 'a round melon with netted beige skin'],
     tips: {
       look: ['網紋細密均勻、明顯凸起', '果柄（T 字蒂）稍微乾'],
       touch: ['底部（花痕處）按壓稍軟有彈性'],
@@ -255,7 +255,209 @@ export const FRUITS = [
   },
 ];
 
-// 非水果的畫面，讓鏡頭沒對準水果時不會硬猜一種水果。
+export const VEGETABLES = [
+  {
+    id: 'cabbage', name: '高麗菜', emoji: '🥬', season: '全年（冬季最甜）',
+    names: ['a cabbage', 'a head of green cabbage', 'a round flat green cabbage', 'a round green cabbage head with wide leaves'],
+    tips: {
+      look: ['外葉翠綠有光澤、葉片完整', '底部切口小、新鮮不發黑'],
+      touch: ['拿起來沉、按壓結實；冬天的扁圓形高麗菜通常較甜'],
+      avoid: ['外葉黃化、底部切口變黑或裂開'],
+      store: ['不洗，用紙包好冷藏；挖掉菜心塞濕紙巾可放更久'],
+    },
+  },
+  {
+    id: 'napa_cabbage', name: '大白菜', emoji: '🥬', season: '11–3 月',
+    names: ['a napa cabbage', 'Chinese cabbage', 'an elongated napa cabbage with white stalks'],
+    tips: {
+      look: ['葉片緊密包覆、白色菜梗有光澤', '切開的看切面，中心沒有隆起的較新鮮'],
+      touch: ['拿起來沉、頂部按壓結實'],
+      avoid: ['葉片軟爛、發黃或有黑斑'],
+      store: ['用紙包好、直立放冷藏'],
+    },
+  },
+  {
+    id: 'broccoli', name: '青花菜', emoji: '🥦', season: '11–4 月',
+    names: ['broccoli', 'a head of broccoli', 'green broccoli florets'],
+    tips: {
+      look: ['花蕾細密、深綠色、緊實', '莖的切口濕潤新鮮、不中空'],
+      touch: ['拿起來有重量'],
+      avoid: ['花蕾轉黃或開花、莖部中空'],
+      store: ['裝袋冷藏，3–4 天內吃完'],
+    },
+  },
+  {
+    id: 'cauliflower', name: '白花椰菜', emoji: '🤍', season: '11–3 月',
+    names: ['a cauliflower', 'a head of white cauliflower', 'white cauliflower florets'],
+    tips: {
+      look: ['花球潔白或乳白、緊密不鬆散', '外葉翠綠'],
+      touch: ['拿起來沉、花球硬實'],
+      avoid: ['花球有褐色斑點、鬆散'],
+      store: ['裝袋冷藏'],
+    },
+  },
+  {
+    id: 'eggplant', name: '茄子', emoji: '🍆', season: '全年（夏季盛產）',
+    names: ['an eggplant', 'long purple Asian eggplants', 'a shiny purple eggplant'],
+    tips: {
+      look: ['果皮深紫、有光澤、果形直挺', '蒂頭下方白色或淡綠色的那一圈越寬越新鮮'],
+      touch: ['輕壓有彈性'],
+      avoid: ['表皮皺縮、有褐斑'],
+      store: ['不耐低溫，用紙包好放冰箱蔬果室並盡快吃'],
+    },
+  },
+  {
+    id: 'cucumber', name: '小黃瓜', emoji: '🥒', season: '全年',
+    names: ['a cucumber', 'long slim green cucumbers', 'Japanese cucumbers with small spines'],
+    tips: {
+      look: ['表皮翠綠有光澤、小刺明顯扎手代表新鮮', '粗細均勻'],
+      touch: ['硬挺不彎軟'],
+      avoid: ['尾端變軟、表皮轉黃'],
+      store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'bitter_melon', name: '苦瓜', emoji: '🥒', season: '5–10 月',
+    names: ['a bitter melon', 'a bitter gourd with warty bumpy skin', 'a pale green bitter melon covered in bumps', 'a white bitter melon'],
+    tips: {
+      look: ['表面顆粒大而飽滿、紋路明顯；顆粒越大苦味通常越淡', '白玉苦瓜選潔白、綠苦瓜選亮綠'],
+      touch: ['果形直、兩端飽滿、硬實'],
+      avoid: ['轉黃或變軟（過熟）'],
+      store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'luffa', name: '絲瓜', emoji: '🥒', season: '5–9 月',
+    names: ['a luffa', 'a long smooth green sponge gourd', 'an angled luffa with sharp ridges'],
+    tips: {
+      look: ['表皮翠綠、紋路清楚、帶一點白色粉末', '粗細均勻、蒂頭新鮮'],
+      touch: ['拿起來沉、外皮硬挺有彈性'],
+      avoid: ['表皮發黃、按下去鬆軟（纖維化了）'],
+      store: ['放陰涼處或用紙包好冷藏，盡快吃'],
+    },
+  },
+  {
+    id: 'pumpkin', name: '南瓜', emoji: '🎃', season: '全年',
+    names: ['a pumpkin', 'a kabocha squash', 'a dark green Japanese pumpkin', 'an orange pumpkin'],
+    tips: {
+      look: ['果皮顏色深、表面堅硬', '蒂頭乾燥、像木頭一樣代表熟成', '切開的選果肉深橘、籽飽滿'],
+      touch: ['拿起來沉甸甸'],
+      avoid: ['表面軟爛、蒂頭發霉'],
+      store: ['整顆放常溫通風處可放很久；切開去籽包好冷藏'],
+    },
+  },
+  {
+    id: 'corn', name: '玉米', emoji: '🌽', season: '全年',
+    names: ['an ear of corn', 'corn on the cob with husks', 'sweet corn'],
+    tips: {
+      look: ['外葉翠綠濕潤', '玉米鬚呈褐色、微微濕潤代表熟度剛好'],
+      touch: ['隔著外葉摸，顆粒飽滿到頂端'],
+      avoid: ['鬚乾黑、外葉乾黃'],
+      store: ['連葉冷藏，越早吃越甜'],
+    },
+  },
+  {
+    id: 'bell_pepper', name: '甜椒／青椒', emoji: '🫑', season: '全年',
+    names: ['a bell pepper', 'red and yellow bell peppers', 'a green bell pepper'],
+    tips: {
+      look: ['表皮光亮、顏色鮮豔均勻', '蒂頭鮮綠'],
+      touch: ['硬挺、拿起來有重量代表果肉厚'],
+      avoid: ['表皮皺縮、有凹陷軟斑'],
+      store: ['冷藏'],
+    },
+  },
+  {
+    id: 'sweet_potato', name: '地瓜', emoji: '🍠', season: '全年',
+    names: ['a sweet potato', 'sweet potatoes with purple-red skin', 'tapered reddish sweet potatoes'],
+    tips: {
+      look: ['外皮光滑完整、顏色鮮明', '胖胖的紡錘形、鬚根和凹洞少'],
+      avoid: ['發芽、蟲孔；有黑斑的會發苦，不要吃'],
+      store: ['放常溫通風陰暗處，不要冰'],
+    },
+  },
+  {
+    id: 'potato', name: '馬鈴薯', emoji: '🥔', season: '全年（冬春盛產）',
+    names: ['a potato', 'round brown potatoes', 'raw potatoes with light brown skin'],
+    tips: {
+      look: ['外皮光滑乾淨、形狀圓整、芽眼淺'],
+      touch: ['硬實不軟'],
+      avoid: ['發芽或表皮變綠：含有毒的龍葵鹼，不要買'],
+      store: ['放陰暗通風處，不要和洋蔥放在一起'],
+    },
+  },
+  {
+    id: 'carrot', name: '紅蘿蔔', emoji: '🥕', season: '12–4 月',
+    names: ['a carrot', 'orange carrots', 'a bunch of carrots'],
+    tips: {
+      look: ['顏色橙紅鮮豔、表皮光滑', '上下粗細差不多、頂部的芯小'],
+      touch: ['硬挺不彎'],
+      avoid: ['裂開、鬚根多、發軟'],
+      store: ['去掉葉子後用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'daikon', name: '白蘿蔔', emoji: '🤍', season: '11–3 月',
+    names: ['a daikon radish', 'a long thick white radish root', 'white daikon radishes with green leaves'],
+    tips: {
+      look: ['表皮白皙光滑有光澤、鬚根少', '有葉子的選葉子翠綠'],
+      touch: ['拿起來沉甸甸；太輕可能空心'],
+      avoid: ['表面有裂痕'],
+      store: ['切掉葉子後用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'onion', name: '洋蔥', emoji: '🧅', season: '2–5 月',
+    names: ['an onion', 'yellow onions', 'a brown onion'],
+    tips: {
+      look: ['外皮乾燥有光澤、完整', '頂端乾燥緊實'],
+      touch: ['整顆硬實，頂端不軟'],
+      avoid: ['發芽、頂端軟爛或發霉'],
+      store: ['放通風陰涼處，和馬鈴薯分開放'],
+    },
+  },
+  {
+    id: 'bamboo_shoot', name: '竹筍', emoji: '🎋', season: '5–9 月',
+    names: ['a bamboo shoot', 'fresh bamboo shoots with husks', 'a curved green bamboo shoot'],
+    tips: {
+      look: ['綠竹筍選彎彎的牛角形', '筍尖沒有出青（變綠）；出青的會苦', '底部切口白嫩濕潤'],
+      touch: ['拿起來沉、底部粗'],
+      avoid: ['筍尖發綠、切口乾黃'],
+      store: ['買回當天連殼煮熟再冰，放越久越苦'],
+    },
+  },
+  {
+    id: 'okra', name: '秋葵', emoji: '🌶️', season: '5–10 月',
+    names: ['okra', 'small green okra pods with a pointed tip', 'a pile of okra'],
+    tips: {
+      look: ['翠綠、表面細絨毛完整', '長度約 8–10 公分的最嫩'],
+      touch: ['尾端輕輕一折就斷代表嫩'],
+      avoid: ['太大太長（老了、纖維粗）、有黑斑'],
+      store: ['用紙包好冷藏，2–3 天內吃完'],
+    },
+  },
+  {
+    id: 'ginger', name: '薑', emoji: '🫚', season: '嫩薑 6–9 月、老薑全年',
+    names: ['ginger root', 'a knobby beige ginger rhizome', 'young ginger with pink tips'],
+    tips: {
+      look: ['嫩薑選表皮淡黃白、芽尖帶粉紅且光滑', '老薑選表皮乾燥、紋路明顯'],
+      touch: ['堅硬結實、拿起來沉'],
+      avoid: ['發軟、發霉或腐爛'],
+      store: ['老薑放常溫通風處；嫩薑冷藏'],
+    },
+  },
+  {
+    id: 'tomato', name: '大番茄', emoji: '🍅', season: '12–4 月',
+    names: ['a large red tomato', 'big round red tomatoes', 'beefsteak tomatoes'],
+    tips: {
+      look: ['果色紅潤均勻、果形圓整、蒂頭鮮綠'],
+      touch: ['拿起來有重量、輕壓有彈性'],
+      avoid: ['裂果、軟爛、蒂頭發黑'],
+      store: ['還沒全紅放常溫後熟，熟了再冷藏'],
+    },
+  },
+];
+
+// 非蔬果的畫面，讓鏡頭沒對準蔬果時不會硬猜一種。
 export const BACKGROUNDS = [
   "a photo of a person's face",
   'a photo of a hand',
@@ -263,7 +465,6 @@ export const BACKGROUNDS = [
   'a photo of a table',
   'a photo of a wall',
   'a photo of the floor',
-  'a photo of vegetables',
   'a photo of a smartphone',
   'a photo of text on paper',
   'a blurry photo',

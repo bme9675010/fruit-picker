@@ -25,8 +25,8 @@
 
     <section id="intro" class="intro">
       <div class="intro-card">
-        <div class="intro-emoji">🥭🍍🍉</div>
-        <h1>拿鏡頭對準水果<br>告訴你怎麼挑</h1>
+        <div class="intro-emoji">🥭🍉🥦🥕</div>
+        <h1>拿鏡頭對準蔬果<br>告訴你怎麼挑</h1>
         <p>辨識全部在手機上進行，照片不會上傳。第一次使用需下載約 23MB 的辨識模型，之後就會記住。</p>
         <button id="startBtn" class="btn primary">開啟相機</button>
         <label class="btn ghost">
@@ -43,7 +43,7 @@
       <div class="sheet-head">
         <div id="fruitEmoji" class="fruit-emoji">🔍</div>
         <div class="fruit-title">
-          <h2 id="fruitName">把水果放進框框裡</h2>
+          <h2 id="fruitName">把蔬果放進框框裡</h2>
           <div id="fruitMeta" class="meta">辨識中…</div>
         </div>
       </div>
@@ -51,7 +51,7 @@
       <div id="tips" class="tips"></div>
       <div class="actions">
         <button id="pauseBtn" class="btn small">⏸ 暫停</button>
-        <button id="listBtn" class="btn small">📋 手動選水果</button>
+        <button id="listBtn" class="btn small">📋 手動選蔬果</button>
         <label class="btn small">
           🖼 選照片
           <input id="fileInput2" type="file" accept="image/*" hidden>
@@ -61,7 +61,7 @@
 
     <dialog id="listDialog">
       <form method="dialog">
-        <h3>選擇水果</h3>
+        <h3>選擇蔬果</h3>
         <p class="hint">選了之後，App 會記住目前這個畫面，下次遇到類似的會認得更準（只存在這支手機）。</p>
         <div id="fruitGrid" class="grid"></div>
         <button class="btn ghost" value="close">關閉</button>

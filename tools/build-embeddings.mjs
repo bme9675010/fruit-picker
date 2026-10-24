@@ -2,14 +2,14 @@
 // 用法：cd tools && npm install && node build-embeddings.mjs
 import { writeFile } from 'node:fs/promises';
 import { AutoTokenizer, CLIPTextModelWithProjection } from '@huggingface/transformers';
-import { FRUITS, BACKGROUNDS } from '../fruits.js';
+import { FRUITS, VEGETABLES, BACKGROUNDS } from '../fruits.js';
 
 const MODEL_ID = 'Xenova/mobileclip_s0';
-const TEMPLATES = [
+const templates = (kind) => [
   'a photo of {}.',
-  'a photo of {}, a type of fruit.',
+  `a photo of {}, a type of ${kind}.`,
   'a close-up photo of {}.',
-  'a photo of {} at a fruit market.',
+  `a photo of {} at a ${kind} market.`,
 ];
 
 const tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
@@ -30,9 +30,11 @@ function meanNormalized(vectors) {
 }
 
 const classes = [];
-for (const fruit of FRUITS) {
-  const texts = fruit.names.flatMap((n) => TEMPLATES.map((t) => t.replace('{}', n)));
-  classes.push({ id: fruit.id, embedding: meanNormalized(await embed(texts)) });
+for (const [items, kind] of [[FRUITS, 'fruit'], [VEGETABLES, 'vegetable']]) {
+  for (const item of items) {
+    const texts = item.names.flatMap((n) => templates(kind).map((t) => t.replace('{}', n)));
+    classes.push({ id: item.id, embedding: meanNormalized(await embed(texts)) });
+  }
 }
 for (const [i, text] of BACKGROUNDS.entries()) {
   classes.push({ id: `bg_${i}`, embedding: meanNormalized(await embed([text])) });

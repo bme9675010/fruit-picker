@@ -4,7 +4,7 @@ import {
   CLIPVisionModelWithProjection,
   RawImage,
 } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/dist/transformers.min.js';
-import { FRUITS, TIP_LABELS } from './fruits.js';
+import { FRUITS, VEGETABLES, TIP_LABELS } from './fruits.js';
 
 env.allowLocalModels = false;
 
@@ -28,7 +28,7 @@ const els = {
   chips: $('candidates'), tips: $('tips'), pauseBtn: $('pauseBtn'),
   listBtn: $('listBtn'), dialog: $('listDialog'), grid: $('fruitGrid'),
 };
-const fruitById = Object.fromEntries(FRUITS.map((f) => [f.id, f]));
+const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES].map((f) => [f.id, f]));
 
 let processor, vision, classes, textMatrix;
 let stream = null;
@@ -40,6 +40,7 @@ let loopTimer = null;
 let busy = false;
 let lastEmbedding = null;   // 最近一次辨識的影像特徵，手動選水果時用來「教」它
 let protos = loadProtos();
+let photoRequest = 0;       // 照片模式的請求編號，用來丟掉過期的結果
 
 function loadProtos() {
   try {
@@ -249,11 +250,11 @@ function showFruit(id, metaHtml) {
 function showSearching(live) {
   tipsFor = null;
   els.emoji.textContent = '🔍';
-  els.name.textContent = live ? '把水果放進框框裡' : '認不太出來';
-  els.meta.textContent = live ? '對準一種水果、光線充足會更準' : '可以點下方候選，或手動選水果';
+  els.name.textContent = live ? '把蔬果放進框框裡' : '認不太出來';
+  els.meta.textContent = live ? '對準一種蔬果、光線充足會更準' : '可以點下方候選，或手動選蔬果';
   const p = document.createElement('p');
   p.className = 'hint';
-  p.textContent = '小提醒：一次對準一種水果，盡量讓它佔滿框框。認錯的話，點上面的候選或「手動選水果」。';
+  p.textContent = '小提醒：一次對準一種蔬果，盡量讓它佔滿框框。認錯的話，點上面的候選或「手動選蔬果」。';
   els.tips.replaceChildren(p);
 }
 
@@ -299,6 +300,7 @@ function setPaused(value) {
 }
 
 function backToCamera() {
+  photoRequest++;
   els.still.hidden = true;
   URL.revokeObjectURL(els.still.src);
   pinned = null;
@@ -321,7 +323,11 @@ async function analyzeFile(file) {
   els.intro.hidden = true;
   els.sheet.hidden = false;
   document.body.classList.remove('live');
-  els.still.src = URL.createObjectURL(file);
+  // 連續選照片時，只採用最後一張的結果
+  const req = ++photoRequest;
+  const url = URL.createObjectURL(file);
+  if (els.still.src) URL.revokeObjectURL(els.still.src);
+  els.still.src = url;
   els.still.hidden = false;
   els.pauseBtn.textContent = stream ? '📷 回到相機' : '↩ 返回';
   pinned = null;
@@ -330,11 +336,13 @@ async function analyzeFile(file) {
   els.meta.textContent = '';
   try {
     await loadModel();
-    await els.still.decode();
-    const probs = await classify(await RawImage.read(els.still.src));
+    if (req !== photoRequest) return;
+    const probs = await classify(await RawImage.read(url));
+    if (req !== photoRequest) return;
     render(probs, false);
     setStatus('照片模式');
   } catch (err) {
+    if (req !== photoRequest) return;
     console.error(err);
     els.name.textContent = '照片分析失敗';
     els.meta.textContent = err.message;
@@ -377,11 +385,15 @@ els.pauseBtn.onclick = () => {
 els.handle.onclick = () => els.sheet.classList.toggle('collapsed');
 
 els.listBtn.onclick = () => els.dialog.showModal();
-els.grid.replaceChildren(...FRUITS.map((f) => {
-  const b = document.createElement('button');
-  b.value = f.id;
-  b.innerHTML = `<span>${f.emoji}</span>${f.name}`;
-  return b;
+els.grid.replaceChildren(...[['水果', FRUITS], ['蔬菜', VEGETABLES]].flatMap(([title, items]) => {
+  const h = document.createElement('h4');
+  h.textContent = title;
+  return [h, ...items.map((f) => {
+    const b = document.createElement('button');
+    b.value = f.id;
+    b.innerHTML = `<span>${f.emoji}</span>${f.name}`;
+    return b;
+  })];
 }));
 els.dialog.addEventListener('close', () => {
   const value = els.dialog.returnValue;

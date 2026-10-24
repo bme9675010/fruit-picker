@@ -151,3 +151,4 @@ dialog .btn { width: 100%; margin-top: 12px; }
   padding: 10px 4px; display: grid; gap: 4px; justify-items: center;
 }
 .grid button span { font-size: 26px; }
+.grid h4 { grid-column: 1 / -1; margin: 8px 0 0; font-size: 14px; color: var(--accent); }
