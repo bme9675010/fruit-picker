@@ -1,0 +1,10 @@
+{
+  "name": "挑水果",
+  "short_name": "挑水果",
+  "description": "用相機辨識水果，顯示挑選技巧",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#14110f",
+  "theme_color": "#14110f",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

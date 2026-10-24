@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14110f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>挑水果</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="stage">
+    <video id="cam" playsinline muted autoplay></video>
+    <img id="still" alt="" hidden>
+    <div id="reticle" aria-hidden="true"><span></span></div>
+
+    <header id="topbar">
+      <div class="brand">🍑 挑水果</div>
+      <div id="status" class="pill">準備中</div>
+    </header>
+
+    <section id="intro" class="intro">
+      <div class="intro-card">
+        <div class="intro-emoji">🥭🍍🍉</div>
+        <h1>拿鏡頭對準水果<br>告訴你怎麼挑</h1>
+        <p>辨識全部在手機上進行，照片不會上傳。第一次使用需下載約 23MB 的辨識模型，之後就會記住。</p>
+        <button id="startBtn" class="btn primary">開啟相機</button>
+        <label class="btn ghost">
+          從相簿選照片
+          <input id="fileInput" type="file" accept="image/*" hidden>
+        </label>
+        <div id="loadBar" class="loadbar" hidden><div></div></div>
+        <p id="introMsg" class="intro-msg"></p>
+      </div>
+    </section>
+
+    <section id="sheet" class="sheet" hidden>
+      <button id="sheetHandle" class="handle" aria-label="展開或收合"></button>
+      <div class="sheet-head">
+        <div id="fruitEmoji" class="fruit-emoji">🔍</div>
+        <div class="fruit-title">
+          <h2 id="fruitName">把水果放進框框裡</h2>
+          <div id="fruitMeta" class="meta">辨識中…</div>
+        </div>
+      </div>
+      <div id="candidates" class="chips"></div>
+      <div id="tips" class="tips"></div>
+      <div class="actions">
+        <button id="pauseBtn" class="btn small">⏸ 暫停</button>
+        <button id="listBtn" class="btn small">📋 手動選水果</button>
+        <label class="btn small">
+          🖼 選照片
+          <input id="fileInput2" type="file" accept="image/*" hidden>
+        </label>
+      </div>
+    </section>
+
+    <dialog id="listDialog">
+      <form method="dialog">
+        <h3>選擇水果</h3>
+        <p class="hint">選了之後，App 會記住目前這個畫面，下次遇到類似的會認得更準（只存在這支手機）。</p>
+        <div id="fruitGrid" class="grid"></div>
+        <button class="btn ghost" value="close">關閉</button>
+        <button class="btn ghost reset" value="reset">清除教過的畫面</button>
+      </form>
+    </dialog>
+  </main>
+  <canvas id="grab" width="256" height="256" hidden></canvas>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

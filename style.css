@@ -1,0 +1,153 @@
+:root {
+  --bg: #14110f;
+  --panel: rgba(28, 24, 21, 0.92);
+  --text: #f6f1ea;
+  --muted: #b9ad9f;
+  --accent: #ffb547;
+  --accent-ink: #2a1a00;
+  --line: rgba(255, 255, 255, 0.12);
+  --ok: #7ad38a;
+  --warn: #ff8f6b;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#stage { position: fixed; inset: 0; }
+#cam, #still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
+#still { object-fit: contain; }
+
+/* 對準框：大小與 app.js 的 RETICLE_RATIO 一致 */
+#reticle {
+  position: absolute; left: 50%; top: 42%;
+  width: min(72vw, 72vh); aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 28px;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  display: none;
+}
+#reticle span {
+  position: absolute; inset: 0; border-radius: inherit;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  -webkit-mask: linear-gradient(#000 0 0) top/100% 22% no-repeat, linear-gradient(#000 0 0) bottom/100% 22% no-repeat;
+          mask: linear-gradient(#000 0 0) top/100% 22% no-repeat, linear-gradient(#000 0 0) bottom/100% 22% no-repeat;
+}
+body.live #reticle { display: block; }
+body.found #reticle span { border-color: var(--accent); }
+
+#topbar {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: calc(var(--safe-t) + 12px) 16px 12px;
+  background: linear-gradient(rgba(0,0,0,.55), transparent);
+  z-index: 3;
+}
+.brand { font-weight: 700; font-size: 17px; letter-spacing: .5px; }
+.pill {
+  font-size: 12px; padding: 5px 10px; border-radius: 999px;
+  background: rgba(0,0,0,.45); border: 1px solid var(--line); color: var(--muted);
+}
+
+/* 開始畫面 */
+.intro {
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 24px 16px;
+  background: radial-gradient(120% 80% at 50% 0%, #3a2a17 0%, var(--bg) 60%);
+  z-index: 4;
+}
+.intro-card { max-width: 380px; width: 100%; text-align: center; }
+.intro-emoji { font-size: 44px; letter-spacing: 6px; }
+.intro h1 { font-size: 26px; line-height: 1.35; margin: 14px 0 10px; }
+.intro p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 22px; }
+.intro .btn { width: 100%; margin-bottom: 10px; }
+.intro-msg { min-height: 1.6em; margin-top: 10px !important; }
+.loadbar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.loadbar div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--text);
+  font: inherit; font-size: 16px; font-weight: 600;
+  padding: 14px 18px; border-radius: 14px; cursor: pointer;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.ghost { background: transparent; }
+.btn.small { font-size: 14px; padding: 10px 12px; border-radius: 12px; flex: 1; white-space: nowrap; }
+.btn:active { transform: scale(.98); }
+
+/* 底部資訊卡 */
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  max-height: 58vh; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+  border-radius: 22px 22px 0 0;
+  padding: 6px 16px calc(var(--safe-b) + 14px);
+  transition: max-height .25s ease;
+}
+.sheet.collapsed { max-height: calc(132px + var(--safe-b)); overflow: hidden; }
+.sheet.collapsed .tips { display: none; }
+.handle {
+  display: block; margin: 4px auto 8px; width: 44px; height: 5px; border-radius: 3px;
+  border: 0; background: rgba(255,255,255,.3); padding: 0; cursor: pointer;
+}
+.sheet-head { display: flex; align-items: center; gap: 12px; }
+.fruit-emoji {
+  font-size: 34px; width: 54px; height: 54px; flex: none; display: grid; place-items: center;
+  background: rgba(255,255,255,.07); border-radius: 16px;
+}
+.fruit-title h2 { margin: 0; font-size: 21px; }
+.meta { color: var(--muted); font-size: 13px; margin-top: 3px; }
+.meta b { color: var(--ok); font-weight: 600; }
+
+.chips { display: flex; gap: 8px; overflow-x: auto; margin: 12px 0 4px; padding-bottom: 2px; scrollbar-width: none; }
+.chips:empty { display: none; }
+.chip {
+  flex: none; font: inherit; font-size: 13px; color: var(--text);
+  background: rgba(255,255,255,.07); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.chip.active { border-color: var(--accent); color: var(--accent); }
+
+.tips { margin-top: 10px; }
+.tip-group { padding: 10px 0; border-top: 1px solid var(--line); }
+.tip-group h4 { margin: 0 0 6px; font-size: 14px; color: var(--accent); }
+.tip-group.avoid h4 { color: var(--warn); }
+.tip-group ul { margin: 0; padding-left: 20px; }
+.tip-group li { font-size: 15px; line-height: 1.6; }
+.hint { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 10px 0 0; }
+
+/* 操作按鈕固定在資訊卡底部，內容再長也按得到 */
+.actions {
+  display: flex; gap: 8px; margin-top: 12px;
+  position: sticky; bottom: calc(-1 * (var(--safe-b) + 14px));
+  padding: 10px 0 calc(var(--safe-b) + 14px);
+  margin-bottom: calc(-1 * (var(--safe-b) + 14px));
+  background: linear-gradient(transparent, #1c1815 10px);
+}
+.sheet.collapsed .actions { position: static; }
+
+dialog {
+  width: min(520px, calc(100vw - 32px)); max-height: 80vh;
+  background: #201b17; color: var(--text); border: 1px solid var(--line); border-radius: 20px; padding: 18px;
+}
+dialog::backdrop { background: rgba(0,0,0,.6); }
+dialog h3 { margin: 0 0 6px; }
+dialog .hint { margin: 0 0 12px; font-size: 13px; }
+dialog .btn.reset { margin-top: 4px; border: 0; color: var(--muted); font-size: 14px; font-weight: 400; }
+dialog .btn { width: 100%; margin-top: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.grid button {
+  font: inherit; font-size: 13px; color: var(--text); cursor: pointer;
+  background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 14px;
+  padding: 10px 4px; display: grid; gap: 4px; justify-items: center;
+}
+.grid button span { font-size: 26px; }
