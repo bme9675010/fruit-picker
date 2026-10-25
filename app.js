@@ -8,7 +8,13 @@ import { FRUITS, VEGETABLES, TIP_LABELS } from './fruits.js';
 
 env.allowLocalModels = false;
 
-const INTERVAL_MS = 250;     // 兩次辨識之間的間隔
+const FAST_MS = 300;         // 還在找蔬果時，兩次辨識之間的間隔
+const SLOW_MS = 1200;        // 結果穩定後放慢，減少手機發熱與耗電
+const STABLE_TICKS = 4;      // 連續幾次都是同一種就算穩定
+// sessionStorage：網頁被手機瀏覽器關掉重開時，用來自動恢復相機
+const LIVE_KEY = 'fp-live';
+const CLEAN_KEY = 'fp-clean';
+const CPU_KEY = 'fp-cpu';
 const EMA = 0.45;            // 新結果的權重，越小畫面越穩定
 const SHOW_AT = 0.45;        // 機率超過這個值才顯示為辨識結果
 const DROP_AT = 0.25;        // 目前顯示的水果低於這個值才換掉
@@ -30,7 +36,7 @@ const els = {
 };
 const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES].map((f) => [f.id, f]));
 
-let processor, vision, classes, textMatrix;
+let processor, vision, classes, textMatrix, modelId;
 let stream = null;
 let paused = false;
 let pinned = null;          // 使用者手動選的水果 id，有值時不再自動辨識
@@ -41,6 +47,19 @@ let busy = false;
 let lastEmbedding = null;   // 最近一次辨識的影像特徵，手動選水果時用來「教」它
 let protos = loadProtos();
 let photoRequest = 0;       // 照片模式的請求編號，用來丟掉過期的結果
+let stableTicks = 0;
+let errorTicks = 0;
+let device = null;          // 'webgpu' 或 'wasm'
+
+function session(key, value) {
+  try {
+    if (value === undefined) return sessionStorage.getItem(key);
+    if (value === null) sessionStorage.removeItem(key);
+    else sessionStorage.setItem(key, value);
+  } catch {
+    return null;
+  }
+}
 
 function loadProtos() {
   try {
@@ -84,8 +103,9 @@ function loadModel() {
         setStatus(`下載模型 ${p.progress.toFixed(0)}%`);
       }
     };
-    processor = await AutoProcessor.from_pretrained(data.model);
-    vision = await loadVision(data.model, progress_callback);
+    modelId = data.model;
+    processor = await AutoProcessor.from_pretrained(modelId);
+    vision = await loadVision(modelId, progress_callback);
     els.loadBar.hidden = true;
     setStatus('辨識中');
   })();
@@ -93,13 +113,15 @@ function loadModel() {
 }
 
 // 有 WebGPU 先用 WebGPU，不行就退回 WASM（CPU）。
+// 如果之前用 WebGPU 時網頁異常結束，這次直接用 WASM（較省記憶體）。
 // 注意：這個模型的 q8 量化版本辨識結果是錯的，所以用 fp16。
 async function loadVision(modelId, progress_callback) {
   const warmup = new RawImage(new Uint8ClampedArray(64 * 64 * 3).fill(128), 64, 64, 3);
-  if ('gpu' in navigator) {
+  if ('gpu' in navigator && !session(CPU_KEY)) {
     try {
       const m = await CLIPVisionModelWithProjection.from_pretrained(modelId, { device: 'webgpu', dtype: 'fp16', progress_callback });
       await m(await processor(warmup));
+      device = 'webgpu';
       return m;
     } catch (err) {
       console.warn('WebGPU 無法使用，改用 WASM', err);
@@ -107,7 +129,19 @@ async function loadVision(modelId, progress_callback) {
   }
   const m = await CLIPVisionModelWithProjection.from_pretrained(modelId, { device: 'wasm', dtype: 'fp16', progress_callback });
   await m(await processor(warmup));
+  device = 'wasm';
   return m;
+}
+
+// WebGPU 連續出錯（例如 GPU 被系統回收）時，改用 WASM 重新載入
+async function fallbackToCpu() {
+  session(CPU_KEY, '1');
+  setStatus('切換到 CPU 模式…');
+  const old = vision;
+  vision = null;
+  await old?.dispose?.().catch(() => {});
+  vision = await loadVision(modelId);
+  setStatus('辨識中');
 }
 
 async function classify(image) {
@@ -136,12 +170,28 @@ async function startCamera() {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error(window.isSecureContext ? '這個瀏覽器不支援相機' : '需要用 https 網址開啟才能使用相機');
   }
+  stream?.getTracks().forEach((t) => t.stop());
   stream = await navigator.mediaDevices.getUserMedia({
     audio: false,
     video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
   });
   els.video.srcObject = stream;
   await els.video.play();
+  session(LIVE_KEY, '1');
+}
+
+// 切到別的 App 再回來時，相機可能已被系統停掉，自動重開
+async function ensureCamera() {
+  if (!stream || document.hidden) return;
+  const track = stream.getVideoTracks()[0];
+  if (track?.readyState === 'live' && !track.muted && (paused || !els.video.paused)) return;
+  try {
+    await startCamera();
+    if (paused) els.video.pause();
+  } catch (err) {
+    console.error(err);
+    setStatus('相機中斷，請重新整理');
+  }
 }
 
 // 只裁切對準框裡的畫面送去辨識（影片是 object-fit: cover，要換算座標）
@@ -161,9 +211,9 @@ function grabReticle() {
   return RawImage.fromCanvas(els.grab);
 }
 
-function scheduleLoop() {
+function scheduleLoop(delay = FAST_MS) {
   clearTimeout(loopTimer);
-  loopTimer = setTimeout(tick, INTERVAL_MS);
+  loopTimer = setTimeout(tick, delay);
 }
 
 async function tick() {
@@ -172,16 +222,23 @@ async function tick() {
   try {
     const image = grabReticle();
     if (image) {
+      const before = shown;
       const probs = await classify(image);
       ema = ema ? ema.map((p, i) => p * (1 - EMA) + probs[i] * EMA) : probs;
       render(ema, true);
+      stableTicks = shown && shown === before ? stableTicks + 1 : 0;
+      errorTicks = 0;
     }
   } catch (err) {
     console.error(err);
     setStatus('辨識發生錯誤');
+    if (++errorTicks >= 3 && device === 'webgpu') {
+      errorTicks = 0;
+      await fallbackToCpu().catch((e) => console.error(e));
+    }
   } finally {
     busy = false;
-    scheduleLoop();
+    scheduleLoop(stableTicks >= STABLE_TICKS ? SLOW_MS : FAST_MS);
   }
 }
 
@@ -351,9 +408,10 @@ async function analyzeFile(file) {
 
 // ---------- 事件 ----------
 
-els.startBtn.onclick = async () => {
+// resumed：網頁被瀏覽器強制關掉後重開，自動恢復
+async function startLive(resumed = false) {
   els.startBtn.disabled = true;
-  els.introMsg.textContent = '';
+  els.introMsg.textContent = resumed ? '正在恢復相機…' : '';
   try {
     await startCamera();
     els.introMsg.textContent = '相機已開啟，正在準備辨識模型…';
@@ -362,16 +420,20 @@ els.startBtn.onclick = async () => {
     els.sheet.hidden = false;
     document.body.classList.add('live');
     showSearching(true);
+    if (resumed) els.meta.textContent = '剛剛被瀏覽器中斷，已自動恢復';
     scheduleLoop();
   } catch (err) {
     console.error(err);
+    session(LIVE_KEY, null);
     els.startBtn.disabled = false;
     els.introMsg.textContent = err.name === 'NotAllowedError'
-      ? '相機權限被拒絕了，請到瀏覽器設定允許相機，或改用「從相簿選照片」。'
+      ? (resumed ? '請按「開啟相機」繼續。' : '相機權限被拒絕了，請到瀏覽器設定允許相機，或改用「從相簿選照片」。')
       : `無法開始：${err.message}`;
     setStatus('未啟動');
   }
-};
+}
+
+els.startBtn.onclick = () => startLive();
 
 for (const input of [$('fileInput'), $('fileInput2')]) {
   input.onchange = () => { analyzeFile(input.files[0]); input.value = ''; };
@@ -405,6 +467,22 @@ els.dialog.addEventListener('close', () => {
   els.dialog.returnValue = '';
 });
 
-document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleLoop(); });
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) return;
+  await ensureCamera();
+  scheduleLoop();
+});
+
+// 正常離開（重新整理、關閉分頁）會觸發 pagehide；被手機瀏覽器強制關掉則不會。
+addEventListener('pagehide', () => session(CLEAN_KEY, '1'));
+addEventListener('pageshow', () => session(CLEAN_KEY, null));
 
 setStatus('準備中');
+
+// 上次相機還開著就自動恢復；若是異常結束（多半是記憶體不足），改用較省資源的 CPU 模式
+if (session(LIVE_KEY)) {
+  const crashed = !session(CLEAN_KEY);
+  if (crashed) session(CPU_KEY, '1');
+  session(CLEAN_KEY, null);
+  startLive(crashed);
+}
