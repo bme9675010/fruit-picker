@@ -11,10 +11,16 @@ env.allowLocalModels = false;
 const FAST_MS = 300;         // 還在找蔬果時，兩次辨識之間的間隔
 const SLOW_MS = 1200;        // 結果穩定後放慢，減少手機發熱與耗電
 const STABLE_TICKS = 4;      // 連續幾次都是同一種就算穩定
+const MULTI_VIEW = true;     // 多角度辨識（見 classify 上方說明）
+const INNER_VIEW = 0.7;      // 「中央畫面」佔整個框框的比例
 // sessionStorage：網頁被手機瀏覽器關掉重開時，用來自動恢復相機
 const LIVE_KEY = 'fp-live';
 const CLEAN_KEY = 'fp-clean';
 const CPU_KEY = 'fp-cpu';
+const LITE_KEY = 'fp-lite';
+// 預設用較準的 MobileCLIP-S1；網頁曾被強制關掉（多半是記憶體不足）就改用較小的 S0
+const MODEL_FILE = { main: 'embeddings-s1.json', lite: 'embeddings.json' };
+const readyLabel = () => (session(LITE_KEY) ? '辨識中・輕量' : '辨識中');
 const EMA = 0.45;            // 新結果的權重，越小畫面越穩定
 const SHOW_AT = 0.45;        // 機率超過這個值才顯示為辨識結果
 const DROP_AT = 0.25;        // 目前顯示的水果低於這個值才換掉
@@ -54,6 +60,7 @@ let protos = loadProtos();
 let photoRequest = 0;       // 照片模式的請求編號，用來丟掉過期的結果
 let stableTicks = 0;
 let errorTicks = 0;
+let frameNo = 0;
 let device = null;          // 'webgpu' 或 'wasm'
 
 function session(key, value) {
@@ -98,7 +105,7 @@ function loadModel() {
   modelPromise ??= (async () => {
     setStatus('下載模型中…');
     els.loadBar.hidden = false;
-    const data = await fetch('embeddings.json').then((r) => r.json());
+    const data = await fetch(session(LITE_KEY) ? MODEL_FILE.lite : MODEL_FILE.main).then((r) => r.json());
     classes = data.classes.map((c) => c.id);
     textMatrix = data.classes.map((c) => Float32Array.from(c.embedding));
     if (data.refs) {
@@ -120,7 +127,7 @@ function loadModel() {
     processor = await AutoProcessor.from_pretrained(modelId);
     vision = await loadVision(modelId, progress_callback);
     els.loadBar.hidden = true;
-    setStatus('辨識中');
+    setStatus(readyLabel());
   })();
   return modelPromise;
 }
@@ -154,12 +161,31 @@ async function fallbackToCpu() {
   vision = null;
   await old?.dispose?.().catch(() => {});
   vision = await loadVision(modelId);
-  setStatus('辨識中');
+  setStatus(readyLabel());
 }
 
-async function classify(image) {
+async function embed(image) {
   const { image_embeds } = await vision(await processor(image));
-  const v = image_embeds.normalize(2, -1).data;
+  return image_embeds.normalize(2, -1).data;
+}
+
+// 多角度辨識：整個畫面與中央 70% 各算一次特徵再平均（照片模式用；即時模式改成輪流看兩種畫面）
+function averageEmbeddings(a, b) {
+  const v = new Float32Array(a.length);
+  let norm = 0;
+  for (let i = 0; i < a.length; i++) { v[i] = a[i] + b[i]; norm += v[i] * v[i]; }
+  norm = Math.sqrt(norm);
+  for (let i = 0; i < a.length; i++) v[i] /= norm;
+  return v;
+}
+
+function centerCrop(image, ratio = INNER_VIEW) {
+  const s = Math.round(Math.min(image.width, image.height) * ratio);
+  const x = Math.round((image.width - s) / 2), y = Math.round((image.height - s) / 2);
+  return image.crop([x, y, x + s - 1, y + s - 1]);
+}
+
+function classify(v) {
   lastEmbedding = v;
   const dot = (a) => {
     let s = 0;
@@ -214,7 +240,8 @@ async function ensureCamera() {
 }
 
 // 只裁切對準框裡的畫面送去辨識（影片是 object-fit: cover，要換算座標）
-function grabReticle() {
+// zoom < 1 時只取框框中央的部分
+function grabReticle(zoom = 1) {
   const v = els.video;
   const vw = v.videoWidth, vh = v.videoHeight;
   if (!vw || !vh) return null;
@@ -223,8 +250,9 @@ function grabReticle() {
   const scale = Math.max(box.width / vw, box.height / vh);
   const offX = (box.width - vw * scale) / 2 + box.left;
   const offY = (box.height - vh * scale) / 2 + box.top;
-  const sx = (r.left - offX) / scale, sy = (r.top - offY) / scale;
-  const size = r.width / scale;
+  const full = r.width / scale;
+  const size = full * zoom;
+  const sx = (r.left - offX) / scale + (full - size) / 2, sy = (r.top - offY) / scale + (full - size) / 2;
   const ctx = els.grab.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(v, sx, sy, size, size, 0, 0, els.grab.width, els.grab.height);
   return RawImage.fromCanvas(els.grab);
@@ -239,10 +267,11 @@ async function tick() {
   if (paused || pinned || busy || document.hidden || !vision || els.still.hidden === false) return scheduleLoop();
   busy = true;
   try {
-    const image = grabReticle();
+    // 多角度：輪流看整個框框與框框中央，靠下面的平滑（EMA）把兩種結果合起來，運算量不變
+    const image = grabReticle(MULTI_VIEW && frameNo++ % 2 ? INNER_VIEW : 1);
     if (image) {
       const before = shown;
-      const probs = await classify(image);
+      const probs = classify(await embed(image));
       ema = ema ? ema.map((p, i) => p * (1 - EMA) + probs[i] * EMA) : probs;
       render(ema, true);
       stableTicks = shown && shown === before ? stableTicks + 1 : 0;
@@ -405,7 +434,7 @@ function setPaused(value) {
   paused = value;
   els.pauseBtn.textContent = paused ? '▶ 繼續' : '⏸ 暫停';
   if (paused) els.video.pause(); else els.video.play();
-  setStatus(paused ? '已暫停' : '辨識中');
+  setStatus(paused ? '已暫停' : readyLabel());
 }
 
 function backToCamera() {
@@ -450,7 +479,10 @@ async function analyzeFile(file) {
   try {
     await loadModel();
     if (req !== photoRequest) return;
-    const probs = await classify(await RawImage.read(url));
+    const image = await RawImage.read(url);
+    let v = await embed(image);
+    if (MULTI_VIEW) v = averageEmbeddings(v, await embed(await centerCrop(image)));
+    const probs = classify(v);
     if (req !== photoRequest) return;
     render(probs, false);
     setStatus('照片模式');
@@ -538,7 +570,10 @@ setStatus('準備中');
 // 上次相機還開著就自動恢復；若是異常結束（多半是記憶體不足），改用較省資源的 CPU 模式
 if (session(LIVE_KEY)) {
   const crashed = !session(CLEAN_KEY);
-  if (crashed) session(CPU_KEY, '1');
+  if (crashed) {
+    session(CPU_KEY, '1');
+    session(LITE_KEY, '1');
+  }
   session(CLEAN_KEY, null);
   startLive(crashed);
 }

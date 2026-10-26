@@ -7,26 +7,29 @@
 // 也會拿目前的 ../embeddings.json（線上版本）在同一批測試照片上比較。
 // 用法：node train.mjs           只比較、印出結果
 //       node train.mjs --write   測試集比線上版本好時，寫入 ../embeddings.json 與 ../refs.bin
+//       node train.mjs --quick   跳過參數搜尋，直接用上次選出的設定
+//       --force                  不跟線上版本比較就寫入（輕量備援模型用）
+//       MODEL=s1 node train.mjs  改用較大的 s1 模型（輸出 ../embeddings-s1.json、../refs-s1.bin）
+// 哪些照片算有效、怎麼分組，一律用 s0 判斷，所以不同模型是在同一批測試照片上比較。
 import { readFile, writeFile, access } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { badTitle } from './photo-rules.mjs';
+import { SFX } from './model.mjs';
 
 const WRITE = process.argv.includes('--write');
 const SCALE = 100;
-// 標題含這些字的多半不是蔬果本身（畫作、植株、菜餚…），當成「非蔬果」的負樣本
-const BAD = 'paintings?|drawings?|illustrations?|engraving|lithograph|flowers?|blossoms?|trees?|seedlings?|field|farm|harvest(ing)?|garden|dish(es)?|soup|salad|cake|pie|recipe|cooked|fried|stew|curry|juice|dried|jam|pickled?|stamp|map|logo|poster|book|insects?|butterfly|moth|caterpillar|beetle|bird|herbarium|specimen|pollen|karyotype|diagram|chart|statue|monument|sculpture';
-const BAD_TITLE = new RegExp(`\\b(${BAD}|leaf|leaves|plants?)\\b`, 'i');
-const BAD_TITLE_LEAFY = new RegExp(`\\b(${BAD})\\b`, 'i'); // 葉菜類本來就是葉子
-const LEAFY = new Set(['bok_choy', 'lettuce', 'spinach', 'water_spinach', 'chives', 'basil', 'cilantro', 'celery', 'green_onion']);
-
 const exists = (p) => access(new URL(p, import.meta.url)).then(() => true, () => false);
 const load = async (p) => JSON.parse(await readFile(new URL(p, import.meta.url), 'utf8'));
-const text = await load('./text-embeddings.json');
+const baseText = await load('./text-embeddings.json');
+const text = SFX ? await load(`./text-embeddings${SFX}.json`) : baseText;
 const index = await load('./photos/index.json');
-const feats = await load('./photos/features.json');
+const baseFeats = await load('./photos/features.json');
+const feats = SFX ? await load(`./photos/features${SFX}.json`) : baseFeats;
 
 const ids = text.classes.map((c) => c.id);
 const D = text.classes[0].embedding.length;
 const T = text.classes.map((c) => Float32Array.from(c.embedding));
+if (baseText.classes.map((c) => c.id).join() !== ids.join()) throw new Error('text-embeddings 的類別不一致，請重新執行 build-embeddings');
 const dot = (a, b) => { let s = 0; for (let i = 0; i < D; i++) s += a[i] * b[i]; return s; };
 const softmax = (z) => { const m = Math.max(...z); const e = z.map((x) => Math.exp(x - m)); const s = e.reduce((a, b) => a + b); return e.map((x) => x / s); };
 const argmax = (a) => a.reduce((bi, x, i) => (x > a[bi] ? i : bi), 0);
@@ -52,20 +55,23 @@ function scorer(classIds, W, refs = [], alpha = 0, beta = 0) {
 
 // ---------- 整理資料 ----------
 const textScore = scorer(ids, T);
+const baseScore = scorer(ids, baseText.classes.map((c) => Float32Array.from(c.embedding)));
+const vec = (f) => (f ? Float32Array.from(f) : null);
 const pos = [], neg = [];
 let dropped = 0;
 for (const [id, entries] of Object.entries(index)) {
   const y = ids.indexOf(id);
   if (y < 0) continue; // 已從清單移除的品項
   for (const e of entries) {
-    const f = feats[e.file];
-    if (!f) continue;
-    const v = Float32Array.from(f);
-    const vc = feats[`${e.file}#c`] ? Float32Array.from(feats[`${e.file}#c`]) : null;
-    const z = textScore(v);
-    const sample = { id, y, v, vc, title: e.title, split: splitOf(e.title) };
-    const bad = (LEAFY.has(id) ? BAD_TITLE_LEAFY : BAD_TITLE).test(e.title.replace(/[_\-.()]/g, ' '));
-    if (bad || textScore.bg[argmax(z)]) { neg.push(sample); continue; }
+    if (!feats[e.file] || !baseFeats[e.file]) continue;
+    // v／vc：受測模型的特徵；v0／vc0：s0 的特徵（篩選照片與評估線上版本用）
+    const sample = {
+      id, y, title: e.title, split: splitOf(e.title),
+      v: vec(feats[e.file]), vc: vec(feats[`${e.file}#c`]), v0: vec(baseFeats[e.file]), vc0: vec(baseFeats[`${e.file}#c`]),
+    };
+    const z = baseScore(sample.v0);
+    const bad = badTitle(id, e.title); // 標題看起來不是蔬果本身（畫作、植株、菜餚…），當成「非蔬果」的負樣本
+    if (bad || baseScore.bg[argmax(z)]) { neg.push(sample); continue; }
     if (z.filter((x) => x > z[y]).length >= 10) { dropped++; continue; } // 多半是搜尋到不相干的圖
     pos.push(sample);
   }
@@ -73,7 +79,7 @@ for (const [id, entries] of Object.entries(index)) {
 const part = (arr, s) => arr.filter((x) => x.split === s);
 // 驗證／測試集排除跟訓練照片幾乎一樣的圖（同一系列連拍），避免高估
 const trainPos = part(pos, 'train');
-const notDup = (x) => !trainPos.some((t) => dot(t.v, x.v) >= 0.95);
+const notDup = (x) => !trainPos.some((t) => dot(t.v0, x.v0) >= 0.95);
 const data = {
   train: trainPos, val: part(pos, 'val').filter(notDup), test: part(pos, 'test').filter(notDup),
   negTrain: part(neg, 'train'), negVal: part(neg, 'val'), negTest: part(neg, 'test'),
@@ -81,11 +87,19 @@ const data = {
 console.log(`照片：正樣本 train ${data.train.length} / val ${data.val.length} / test ${data.test.length}，`
   + `負樣本 ${neg.length}，丟棄（不相干）${dropped}`);
 
-// ---------- 評估：原圖與中央裁切兩種都算 ----------
-function evaluate(score, set, negSet, crop = false) {
+// ---------- 評估：原圖、中央裁切，以及兩者特徵平均（多角度）都算 ----------
+const normalize = (v) => { const n = Math.hypot(...v); return v.map((x) => x / n); };
+// base：評估線上版本（s0）時改用 s0 的特徵
+const view = (s, mode, base = false) => {
+  const [v, vc] = base ? [s.v0, s.vc0] : [s.v, s.vc];
+  if (mode === 'crop') return vc;
+  if (mode === 'multi') return vc && normalize(v.map((x, i) => x + vc[i]));
+  return v;
+};
+function evaluate(score, set, negSet, mode = 'orig') {
   let top1 = 0, top2 = 0, bgMiss = 0, negOk = 0, n = 0;
   for (const s of set) {
-    const v = crop ? s.vc : s.v;
+    const v = view(s, mode, score.base);
     if (!v) continue;
     n++;
     const z = score(v);
@@ -95,15 +109,19 @@ function evaluate(score, set, negSet, crop = false) {
     if (score.bg[argmax(z)]) bgMiss++;
   }
   let m = 0;
-  for (const s of negSet) { const v = crop ? s.vc : s.v; if (!v) continue; m++; if (score.bg[argmax(score(v))]) negOk++; }
+  for (const s of negSet) { const v = view(s, mode, score.base); if (!v) continue; m++; if (score.bg[argmax(score(v))]) negOk++; }
   return { top1: top1 / n, top2: top2 / n, bgMiss: bgMiss / n, negOk: m ? negOk / m : NaN, n };
 }
 const both = (score, set, negSet) => {
-  const a = evaluate(score, set, negSet), b = evaluate(score, set, negSet, true);
+  const a = evaluate(score, set, negSet), b = evaluate(score, set, negSet, 'crop');
   return { orig: a, crop: b, top1: (a.top1 + b.top1) / 2, negOk: (a.negOk + b.negOk) / 2 };
 };
 const pct = (x) => `${(x * 100).toFixed(1)}%`;
 const fmt = (r) => `原圖 top1 ${pct(r.orig.top1)} top2 ${pct(r.orig.top2)} ｜ 裁切 top1 ${pct(r.crop.top1)} top2 ${pct(r.crop.top2)} ｜ 誤判非蔬果 ${pct(r.orig.bgMiss)} ｜ 非蔬果拒絕 ${pct(r.negOk)}`;
+const fmtMulti = (score, set, negSet) => {
+  const r = evaluate(score, set, negSet, 'multi');
+  return `多角度 top1 ${pct(r.top1)} top2 ${pct(r.top2)} ｜ 非蔬果拒絕 ${pct(r.negOk)}`;
+};
 
 // ---------- 線性分類器（從文字特徵出發，L2 拉回文字特徵避免過度擬合） ----------
 const isBg = textScore.bg;
@@ -159,8 +177,10 @@ const consider = (name, r, cfg) => {
   if (merit(r) > merit(best.r) && r.negOk >= base.negOk - 0.05) best = { name, r, ...cfg };
 };
 
+const QUICK = process.argv.includes('--quick'); // 跳過參數搜尋，直接用上次選出的設定
 const SNAP = [50, 100];
-for (const lambda of [0.1, 0.3]) {
+if (QUICK) best = { name: 'probe+裁切 λ0.1 s50 + 樣本 α10（--quick）', aug: true, lambda: 0.1, step: 50, alpha: 10, beta: 5.5, cap: Infinity };
+else for (const lambda of [0.1, 0.3]) {
   const snaps = trainProbe(withCrops(data.train), withCrops(data.negTrain), lambda, 100, SNAP);
   for (const step of SNAP) {
     for (const alpha of [10, 20]) {
@@ -199,6 +219,7 @@ if (await exists('../embeddings.json')) {
     curRefs = cur.refs.labels.map((c, i) => ({ c, v: Float32Array.from(bin.subarray(i * D, (i + 1) * D), (x) => x * cur.refs.scales[i]) }));
   }
   current = scorer(curIds, cur.classes.map((c) => Float32Array.from(c.embedding)), curRefs, cur.refs?.alpha ?? 0, cur.refs?.beta ?? 0);
+  current.base = true; // 線上版本是 s0
 }
 const curSet = current ? new Set(current.ids) : new Set();
 const oldTest = data.test.filter((s) => curSet.has(s.id)), newTest = data.test.filter((s) => !curSet.has(s.id));
@@ -210,6 +231,8 @@ const curR = current && both(current, oldTest, oldNeg);
 if (current) console.log(`  線上版本    ${fmt(curR)}`);
 const newR = both(finalScore, oldTest, oldNeg);
 console.log(`  新版本      ${fmt(newR)}`);
+if (current) console.log(`  線上版本    ${fmtMulti(current, oldTest, oldNeg)}`);
+console.log(`  新版本      ${fmtMulti(finalScore, oldTest, oldNeg)}`);
 if (newTest.length) {
   console.log(`[測試・新增品項 ${newTest.length} 張]`);
   console.log(`  只用文字    ${fmt(both(textScore, newTest, []))}`);
@@ -223,7 +246,7 @@ for (const s of data.test) {
   const r = (perClass[s.id] ??= { n: 0, t: 0, c: 0, b: 0 });
   r.n++;
   if (pick(textScore, s.v) === s.id) r.t++;
-  if (current && curSet.has(s.id) && pick(current, s.v) === s.id) r.c++;
+  if (current && curSet.has(s.id) && pick(current, s.v0) === s.id) r.c++;
   if (pick(finalScore, s.v) === s.id) r.b++;
 }
 console.log('\n各類別 測試集（文字 → 線上 → 新）：');
@@ -251,8 +274,9 @@ for (const [margin, min2] of [[0.2, 0.15], [0.3, 0.1]]) {
   console.log(`  差距<${margin} 且第二名≥${min2}：直接答對 ${pc(direct)}、詢問 ${pc(asked)}（其中選項含正確 ${pc(askedOk)}）、直接答錯 ${pc(wrong)}`);
 }
 
+// --force：不跟線上版本比較就寫入（用於輕量備援模型，它只要跟主模型的品項一致即可）
 if (WRITE) {
-  if (curR && newR.top1 <= curR.top1) {
+  if (curR && newR.top1 <= curR.top1 && !process.argv.includes('--force')) {
     console.log('\n原有品項的測試準確度沒有比線上版本好，不寫入。');
   } else {
     const classes = ids.map((id, c) => ({ id, embedding: Array.from(W[c], (x) => +x.toFixed(5)) }));
@@ -261,13 +285,13 @@ if (WRITE) {
       // refs.bin：每個參考樣本 D 個 int8；類別與縮放係數放在 JSON
       const bin = new Int8Array(qrefs.length * D);
       qrefs.forEach((r, i) => bin.set(r.q, i * D));
-      await writeFile(new URL('../refs.bin', import.meta.url), bin);
+      await writeFile(new URL(`../refs${SFX}.bin`, import.meta.url), bin);
       out.refs = {
-        file: 'refs.bin', dim: D, alpha: best.alpha, beta: best.beta,
+        file: `refs${SFX}.bin`, dim: D, alpha: best.alpha, beta: best.beta,
         labels: qrefs.map((r) => r.c), scales: qrefs.map((r) => +r.scale.toPrecision(6)),
       };
     }
-    await writeFile(new URL('../embeddings.json', import.meta.url), JSON.stringify(out));
-    console.log(`\n已寫入 ../embeddings.json${qrefs.length ? ` 與 ../refs.bin（${qrefs.length} 個參考樣本）` : ''}（${best.name}）`);
+    await writeFile(new URL(`../embeddings${SFX}.json`, import.meta.url), JSON.stringify(out));
+    console.log(`\n已寫入 ../embeddings${SFX}.json${qrefs.length ? ` 與 ../refs${SFX}.bin（${qrefs.length} 個參考樣本）` : ''}（${best.name}）`);
   }
 }

@@ -546,6 +546,28 @@ export const FRUITS = [
       store: ['密封冷藏'],
     },
   },
+  {
+    id: 'chestnut', name: '栗子', emoji: '🌰', season: '9–1 月',
+    cue: '深褐色硬殼，一面扁平',
+    names: ['chestnuts', 'shiny brown chestnuts', 'a pile of raw chestnuts'],
+    tips: {
+      look: ['外殼深褐色有光澤、顆粒飽滿', '表面沒有小洞或黑斑'],
+      touch: ['拿起來沉、捏起來硬實；殼一捏就凹代表果肉乾縮了'],
+      avoid: ['有小洞（蟲蛀）、發霉'],
+      store: ['生栗子冷藏，盡快煮'],
+    },
+  },
+  {
+    id: 'peanut', name: '花生（帶殼）', emoji: '🥜', season: '6–7 月、10–12 月',
+    cue: '米色網紋殼，像小葫蘆',
+    names: ['peanuts in shells', 'raw peanuts with pods', 'groundnuts in the shell'],
+    tips: {
+      look: ['外殼完整、紋路清楚、顆粒飽滿'],
+      touch: ['捏起來殼硬實、裡面的豆仁飽滿'],
+      avoid: ['殼上有黑斑或發霉：花生發霉可能產生黃麴毒素，整包都不要吃'],
+      store: ['生花生冷藏，盡快煮'],
+    },
+  },
 ];
 
 export const VEGETABLES = [
@@ -1187,6 +1209,92 @@ export const VEGETABLES = [
       touch: ['硬實'],
       avoid: ['發芽、發軟、發霉'],
       store: ['放通風陰涼處'],
+    },
+  },
+  {
+    id: 'bird_nest_fern', name: '山蘇', emoji: '🌿', season: '全年',
+    cue: '捲曲的長條綠葉，中間深色葉脈',
+    names: ["bird's nest fern shoots", 'young Asplenium nidus fronds', 'curled green fern leaves for cooking'],
+    tips: {
+      look: ['嫩葉捲曲、翠綠有光澤、葉片完整'],
+      touch: ['嫩，一折就斷'],
+      avoid: ['葉片老硬、發黃、捲曲處變褐'],
+      store: ['用紙包好冷藏，2–3 天內吃完'],
+    },
+  },
+  {
+    id: 'fiddlehead', name: '過貓', emoji: '🌱', season: '3–10 月',
+    cue: '頂端捲成問號狀的嫩芽',
+    names: ['fiddlehead ferns', 'vegetable fern shoots', 'curled fern fiddleheads'],
+    tips: {
+      look: ['頂端捲曲緊實、翠綠'],
+      touch: ['莖嫩，一折就斷'],
+      avoid: ['捲頭散開、變黑變軟'],
+      store: ['用紙包好冷藏，盡快吃完'],
+    },
+  },
+  {
+    id: 'chayote_shoots', name: '龍鬚菜', emoji: '🌿', season: '全年（夏季最多）',
+    cue: '嫩莖帶捲鬚和小葉',
+    names: ['chayote shoots', 'vine tips with curly tendrils', 'chayote vine tips'],
+    tips: {
+      look: ['嫩葉翠綠、捲鬚細嫩、莖不粗'],
+      touch: ['莖一折就斷'],
+      avoid: ['葉片發黃、莖老硬'],
+      store: ['用紙包好冷藏，1–2 天內吃完'],
+    },
+  },
+  {
+    id: 'daylily', name: '金針花', emoji: '🌼', season: '8–9 月',
+    cue: '細長的黃色花苞',
+    names: ['daylily buds', 'fresh orange daylily flower buds', 'golden needle vegetables'],
+    tips: {
+      look: ['花苞飽滿、還沒綻開，黃綠到金黃色'],
+      avoid: ['花苞已開、萎軟、發黑'],
+      other: ['新鮮金針一定要充分煮熟再吃'],
+      store: ['冷藏，盡快吃完'],
+    },
+  },
+  {
+    id: 'maitake', name: '舞菇', emoji: '🍄', season: '全年',
+    cue: '層層疊疊的灰褐色菇',
+    names: ['maitake mushrooms', 'hen of the woods mushroom', 'Grifola frondosa'],
+    tips: {
+      look: ['菌傘層層疊疊、灰褐色、邊緣完整'],
+      touch: ['乾爽有彈性'],
+      avoid: ['出水、變黑'],
+      store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'red_amaranth', name: '紅莧菜', emoji: '🥬', season: '4–10 月',
+    cue: '紫紅色葉片',
+    names: ['red amaranth leaves', 'Chinese spinach with red leaves', 'amaranth greens'],
+    tips: {
+      look: ['葉片紫紅鮮豔、莖細嫩'],
+      avoid: ['葉片萎軟、發黃'],
+      store: ['用紙包好冷藏，1–2 天內吃完'],
+    },
+  },
+  {
+    id: 'sweet_potato_leaves', name: '地瓜葉', emoji: '🍃', season: '全年',
+    cue: '心形綠葉、細長葉柄',
+    names: ['sweet potato leaves', 'sweet potato greens', 'heart-shaped sweet potato vine leaves'],
+    tips: {
+      look: ['葉片翠綠、葉柄細嫩'],
+      touch: ['莖一折就斷'],
+      avoid: ['葉片發黃、有斑點、莖老硬'],
+      store: ['用紙包好冷藏，1–2 天內吃完'],
+    },
+  },
+  {
+    id: 'leek', name: '蒜苗', emoji: '🧅', season: '11–3 月',
+    cue: '扁平寬葉、白色粗莖',
+    names: ['leeks', 'green garlic', 'young garlic stalks with flat leaves'],
+    tips: {
+      look: ['蒜白粗而潔白、葉片翠綠挺直'],
+      avoid: ['葉尖枯黃、蒜白變軟'],
+      store: ['用紙包好冷藏'],
     },
   },
 ];

@@ -1,14 +1,15 @@
-// 計算 tools/photos/ 裡每張照片的影像特徵（與 App 相同的 fp16 模型），結果快取在 photos/features.json。
-// 用法：node embed-photos.mjs
+// 計算 tools/photos/ 裡每張照片的影像特徵（與 App 相同的 fp16 模型），結果快取在 photos/features.json（其他模型為 features-s1.json 等）。
+// 用法：node embed-photos.mjs（較大模型：MODEL=s1 node embed-photos.mjs）
 import { readFile, writeFile, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { AutoProcessor, CLIPVisionModelWithProjection, RawImage } from '@huggingface/transformers';
+import { MODEL_ID, SFX } from './model.mjs';
 
 const dir = new URL('./photos/', import.meta.url);
 const exists = (p) => access(p).then(() => true, () => false);
-const { model } = JSON.parse(await readFile(new URL('./text-embeddings.json', import.meta.url), 'utf8'));
+const model = MODEL_ID;
 const index = JSON.parse(await readFile(new URL('index.json', dir), 'utf8'));
-const featFile = new URL('features.json', dir);
+const featFile = new URL(`features${SFX}.json`, dir);
 const feats = (await exists(featFile)) ? JSON.parse(await readFile(featFile, 'utf8')) : {};
 
 const processor = await AutoProcessor.from_pretrained(model);

@@ -3,8 +3,8 @@
 import { writeFile } from 'node:fs/promises';
 import { AutoTokenizer, CLIPTextModelWithProjection } from '@huggingface/transformers';
 import { FRUITS, VEGETABLES, BACKGROUNDS } from '../fruits.js';
+import { MODEL_ID, SFX } from './model.mjs';
 
-const MODEL_ID = 'Xenova/mobileclip_s0';
 const templates = (kind) => [
   'a photo of {}.',
   `a photo of {}, a type of ${kind}.`,
@@ -41,5 +41,5 @@ for (const [i, text] of BACKGROUNDS.entries()) {
 }
 
 // 中間檔：train.mjs 會再用參考照片調整，產出 App 用的 ../embeddings.json
-await writeFile(new URL('./text-embeddings.json', import.meta.url), JSON.stringify({ model: MODEL_ID, classes }));
+await writeFile(new URL(`./text-embeddings${SFX}.json`, import.meta.url), JSON.stringify({ model: MODEL_ID, classes }));
 console.log(`wrote ${classes.length} classes`);
