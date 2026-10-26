@@ -1,9 +1,10 @@
-// 蔬果資料：names 是給 CLIP 比對用的英文描述，其餘是畫面上顯示的挑選技巧。
+// 蔬果資料：names 是給 CLIP 比對用的英文描述，cue 是易混淆時幫忙分辨的外觀重點，其餘是挑選技巧。
 // 新增蔬果後要重新執行 tools/build-embeddings.mjs 產生 embeddings.json。
 
 export const FRUITS = [
   {
     id: 'mango', name: '芒果', emoji: '🥭', season: '5–8 月',
+    cue: '橢圓形，紅黃或綠皮',
     names: ['a mango', 'mangoes', 'a red and yellow Irwin mango'],
     tips: {
       look: ['果皮飽滿光滑、顏色均勻，愛文以紅中透黃為佳', '表面有一層薄薄白色果粉代表新鮮'],
@@ -15,6 +16,7 @@ export const FRUITS = [
   },
   {
     id: 'guava', name: '芭樂', emoji: '🍏', season: '全年',
+    cue: '綠皮，表面有細顆粒',
     names: ['a guava', 'guavas', 'a green guava fruit with bumpy skin'],
     tips: {
       look: ['表皮顆粒（凸起）越明顯越大越甜', '顏色由深綠轉淺綠、微微帶黃且有光澤', '果形圓整、蒂頭周圍飽滿'],
@@ -25,6 +27,7 @@ export const FRUITS = [
   },
   {
     id: 'wax_apple', name: '蓮霧', emoji: '🔔', season: '12–4 月',
+    cue: '紅色鐘形，底部開口',
     names: ['a wax apple', 'a java apple', 'glossy red bell-shaped wax apples', 'a pink wax jambu fruit', 'dark red Taiwanese black pearl wax apples'],
     tips: {
       look: ['顏色越深紅越甜（黑珍珠為深紫紅）', '底部（果臍）張開越大越成熟', '表皮有光澤、沒有裂痕'],
@@ -35,6 +38,7 @@ export const FRUITS = [
   },
   {
     id: 'sugar_apple', name: '釋迦', emoji: '🟢', season: '7–3 月',
+    cue: '綠色，表面一顆顆鱗目',
     names: ['a sugar apple', 'a custard apple', 'an atemoya fruit', 'a green sugar apple with scaly bumps'],
     tips: {
       look: ['鱗目大而飽滿', '鱗目之間的溝由深綠轉淡黃白色表示快熟了'],
@@ -45,6 +49,7 @@ export const FRUITS = [
   },
   {
     id: 'dragon_fruit', name: '火龍果', emoji: '🐉', season: '6–11 月',
+    cue: '桃紅色，帶綠色鱗片',
     names: ['a dragon fruit', 'a pitaya', 'a pink dragon fruit with green scales'],
     tips: {
       look: ['果皮鮮紅亮麗、顏色均勻', '鱗片尖端仍是青綠色；鱗片枯黃代表放久了', '果形圓胖飽滿'],
@@ -55,6 +60,7 @@ export const FRUITS = [
   },
   {
     id: 'papaya', name: '木瓜', emoji: '🧡', season: '全年',
+    cue: '長橢圓，黃綠皮',
     names: ['a papaya', 'papayas', 'a yellow and green papaya fruit'],
     tips: {
       look: ['果皮轉黃超過一半就差不多可以吃', '表皮光滑、果形肥短飽滿'],
@@ -65,6 +71,7 @@ export const FRUITS = [
   },
   {
     id: 'banana', name: '香蕉', emoji: '🍌', season: '全年',
+    cue: '彎長條，黃色成串',
     names: ['a banana', 'a bunch of bananas', 'ripe yellow bananas'],
     tips: {
       look: ['果皮金黃、出現少許褐色小斑點（芝麻斑）時最香甜', '果柄青綠堅實'],
@@ -74,6 +81,7 @@ export const FRUITS = [
   },
   {
     id: 'pineapple', name: '鳳梨', emoji: '🍍', season: '3–8 月',
+    cue: '頂端有冠芽，表面格狀',
     names: ['a pineapple', 'pineapples', 'a whole pineapple with a crown of leaves'],
     tips: {
       look: ['果目大而平坦', '底部約 1/3 到一半轉黃', '冠芽（葉子）短小'],
@@ -84,6 +92,7 @@ export const FRUITS = [
   },
   {
     id: 'watermelon', name: '西瓜', emoji: '🍉', season: '4–8 月',
+    cue: '大圓球，深綠條紋',
     names: ['a watermelon', 'a whole watermelon', 'a striped green watermelon'],
     tips: {
       look: ['紋路清楚、間距較寬', '底部著地處的黃斑越黃越熟', '果柄旁捲鬚已乾枯'],
@@ -94,6 +103,7 @@ export const FRUITS = [
   },
   {
     id: 'lychee', name: '荔枝', emoji: '🔴', season: '5–7 月',
+    cue: '紅色，表皮粗糙龜裂',
     names: ['lychees', 'a lychee fruit', 'a bunch of red lychees'],
     tips: {
       look: ['果皮鮮紅、表面龜裂片平坦飽滿', '果蒂新鮮沒有發黑'],
@@ -104,6 +114,7 @@ export const FRUITS = [
   },
   {
     id: 'longan', name: '龍眼', emoji: '🟤', season: '7–9 月',
+    cue: '小圓粒，黃褐色成串',
     names: ['longans', 'a bunch of longan fruits', 'clusters of small round tan longan fruits on stems'],
     tips: {
       look: ['果皮黃褐色、表面較光滑', '顆粒大小均勻'],
@@ -115,6 +126,7 @@ export const FRUITS = [
   },
   {
     id: 'grape', name: '葡萄', emoji: '🍇', season: '6–8 月、11–1 月',
+    cue: '小圓粒，紫色成串',
     names: ['grapes', 'a bunch of purple grapes', 'a cluster of grapes'],
     tips: {
       look: ['果粒飽滿、表面有均勻白色果粉', '果梗青綠、顏色深紫均勻'],
@@ -125,6 +137,7 @@ export const FRUITS = [
   },
   {
     id: 'strawberry', name: '草莓', emoji: '🍓', season: '12–4 月',
+    cue: '紅色心形，表面有小籽',
     names: ['a strawberry', 'strawberries', 'a box of red strawberries'],
     tips: {
       look: ['紅色一路紅到蒂頭附近、有光澤', '蒂頭鮮綠微微翹起'],
@@ -135,6 +148,7 @@ export const FRUITS = [
   },
   {
     id: 'apple', name: '蘋果', emoji: '🍎', season: '全年（進口）',
+    cue: '圓形，表皮光滑',
     names: ['an apple', 'red apples', 'a shiny red apple'],
     tips: {
       look: ['顏色均勻、底部也轉色', '果皮有光澤；部分品種帶透明蜜心'],
@@ -145,6 +159,7 @@ export const FRUITS = [
   },
   {
     id: 'citrus', name: '柑橘（柳丁／橘子）', emoji: '🍊', season: '10–3 月',
+    cue: '橘色圓形，表皮有油胞',
     names: ['an orange', 'a mandarin orange', 'a ponkan', 'a tangerine', 'citrus fruits with dimpled orange peel'],
     tips: {
       look: ['果皮油胞細密、顏色均勻有光澤', '果蒂新鮮不乾枯'],
@@ -155,6 +170,7 @@ export const FRUITS = [
   },
   {
     id: 'pomelo', name: '文旦／柚子', emoji: '🟡', season: '8–9 月',
+    cue: '大顆黃綠，頭尖底寬',
     names: ['a pomelo', 'a pomelo fruit', 'a large green pomelo'],
     tips: {
       look: ['文旦挑「頭尖、肚大、底部寬平」的鐘形', '果皮細緻、油胞細'],
@@ -165,6 +181,7 @@ export const FRUITS = [
   },
   {
     id: 'persimmon', name: '柿子', emoji: '🟠', season: '9–12 月',
+    cue: '扁圓橘紅，頂端四瓣蒂',
     names: ['a persimmon', 'Fuyu persimmons', 'a flat orange persimmon with a green leafy calyx'],
     tips: {
       look: ['果色橙紅均勻、果形端正', '蒂頭完整、緊貼果實'],
@@ -175,6 +192,7 @@ export const FRUITS = [
   },
   {
     id: 'starfruit', name: '楊桃', emoji: '⭐', season: '9–3 月',
+    cue: '五個稜角，切面星形',
     names: ['a starfruit', 'a carambola', 'a yellow star fruit'],
     tips: {
       look: ['稜角寬厚飽滿、果形大', '顏色由綠轉金黃，稜邊的綠色越少越熟'],
@@ -184,6 +202,7 @@ export const FRUITS = [
   },
   {
     id: 'passion_fruit', name: '百香果', emoji: '🟣', season: '6–12 月',
+    cue: '圓形，紫黑色硬殼',
     names: ['a passion fruit', 'purple passion fruits', 'a round dark purple passion fruit'],
     tips: {
       look: ['果皮紫黑；表面微皺代表熟度足、香氣濃'],
@@ -195,6 +214,7 @@ export const FRUITS = [
   },
   {
     id: 'kiwi', name: '奇異果', emoji: '🥝', season: '全年（進口）',
+    cue: '褐色，表面有絨毛',
     names: ['a kiwi fruit', 'kiwifruits', 'a brown fuzzy kiwi fruit'],
     tips: {
       look: ['果形飽滿、絨毛完整'],
@@ -205,6 +225,7 @@ export const FRUITS = [
   },
   {
     id: 'avocado', name: '酪梨', emoji: '🥑', season: '6–12 月',
+    cue: '梨形，深綠色厚皮',
     names: ['an avocado', 'avocados', 'a green avocado', 'a dark green avocado with bumpy skin'],
     tips: {
       look: ['台灣綠皮酪梨熟了仍是綠的；進口哈斯酪梨熟了會轉深紫黑'],
@@ -215,6 +236,7 @@ export const FRUITS = [
   },
   {
     id: 'jujube', name: '蜜棗', emoji: '🫒', season: '12–3 月',
+    cue: '淡綠色，像小蘋果',
     names: ['an Indian jujube', 'ber fruits', 'a light green Taiwanese jujube', 'smooth green jujube fruits'],
     tips: {
       look: ['果皮由翠綠轉淡綠、帶點黃白光澤', '果皮光滑、果形飽滿'],
@@ -225,6 +247,7 @@ export const FRUITS = [
   },
   {
     id: 'pear', name: '水梨', emoji: '🍐', season: '7–10 月',
+    cue: '圓形，黃褐皮有細斑點',
     names: ['an Asian pear', 'a nashi pear', 'a round brown Asian pear'],
     tips: {
       look: ['果點細小、表面光滑有光澤', '果形端正、底部凹陷較深'],
@@ -235,6 +258,7 @@ export const FRUITS = [
   },
   {
     id: 'melon', name: '哈密瓜／洋香瓜', emoji: '🍈', season: '4–11 月',
+    cue: '圓形，表面有網紋',
     names: ['a cantaloupe', 'a muskmelon', 'a round melon with netted beige skin'],
     tips: {
       look: ['網紋細密均勻、明顯凸起', '果柄（T 字蒂）稍微乾'],
@@ -245,6 +269,7 @@ export const FRUITS = [
   },
   {
     id: 'cherry_tomato', name: '小番茄', emoji: '🍅', season: '12–4 月',
+    cue: '小顆紅色，常成串',
     names: ['cherry tomatoes', 'a bowl of small red cherry tomatoes', 'small oval cherry tomatoes'],
     tips: {
       look: ['顏色紅亮均勻、蒂頭鮮綠'],
@@ -255,6 +280,7 @@ export const FRUITS = [
   },
   {
     id: 'peach', name: '水蜜桃', emoji: '🍑', season: '6–8 月',
+    cue: '粉紅帶白，表面細絨毛',
     names: ['a peach', 'fuzzy pink peaches', 'a white peach'],
     tips: {
       look: ['果形圓整、紅暈均勻', '底色由綠轉乳白或淡黃、絨毛細緻'],
@@ -266,6 +292,7 @@ export const FRUITS = [
   },
   {
     id: 'plum', name: '李子', emoji: '🟪', season: '5–7 月',
+    cue: '小圓紫紅，有白色果粉',
     names: ['a plum', 'dark red plums', 'purple plums with a waxy bloom'],
     tips: {
       look: ['果皮顏色深而均勻、表面有白色果粉', '果形飽滿；紅肉李選紫黑色的'],
@@ -276,6 +303,7 @@ export const FRUITS = [
   },
   {
     id: 'cherry', name: '櫻桃', emoji: '🍒', season: '5–8 月、11–2 月（進口）',
+    cue: '小圓深紅，有長果梗',
     names: ['cherries', 'dark red sweet cherries with stems', 'a bowl of cherries'],
     tips: {
       look: ['果色深紅到紫紅、有光澤', '果柄翠綠、果粒大而飽滿'],
@@ -286,6 +314,7 @@ export const FRUITS = [
   },
   {
     id: 'lemon', name: '檸檬', emoji: '🍋', season: '全年（7–9 月盛產）',
+    cue: '橢圓兩端尖，綠或黃',
     names: ['a lemon', 'green lemons', 'yellow lemons'],
     tips: {
       look: ['表皮光滑油亮、皮薄、顏色均勻'],
@@ -296,6 +325,7 @@ export const FRUITS = [
   },
   {
     id: 'mangosteen', name: '山竹', emoji: '🟣', season: '4–9 月（進口）',
+    cue: '深紫圓殼，頂端綠蒂',
     names: ['a mangosteen', 'purple mangosteens with green caps', 'a round dark purple mangosteen with a thick green calyx', 'an opened mangosteen with white segments'],
     tips: {
       look: ['果皮紫紅到深紫、有光澤', '蒂頭翠綠完整'],
@@ -307,6 +337,7 @@ export const FRUITS = [
   },
   {
     id: 'loquat', name: '枇杷', emoji: '🟠', season: '2–4 月',
+    cue: '小橢圓橙黃，帶絨毛',
     names: ['loquats', 'small oval yellow-orange loquats with fuzzy skin', 'a cluster of loquats on a branch'],
     tips: {
       look: ['果皮橙黃、絨毛和白色果粉完整', '果形飽滿、果梗新鮮'],
@@ -317,6 +348,7 @@ export const FRUITS = [
   },
   {
     id: 'blueberry', name: '藍莓', emoji: '🫐', season: '全年（進口）',
+    cue: '藍紫色小粒，有白粉',
     names: ['blueberries', 'a box of fresh blueberries', 'a pile of blueberries'],
     tips: {
       look: ['果實飽滿、深藍紫色、表面有均勻白色果粉', '大小均勻'],
@@ -327,6 +359,7 @@ export const FRUITS = [
   },
   {
     id: 'durian', name: '榴槤', emoji: '🌰', season: '5–8 月（進口）',
+    cue: '大顆，滿是尖刺',
     names: ['a durian', 'a spiky green durian fruit', 'durians'],
     tips: {
       look: ['果刺尖挺、果蒂粗壯新鮮', '果殼的縫線明顯、微微裂開代表熟了'],
@@ -338,6 +371,7 @@ export const FRUITS = [
   },
   {
     id: 'coconut', name: '椰子', emoji: '🥥', season: '全年',
+    cue: '大圓，綠色或褐色硬殼',
     names: ['a green coconut', 'young coconuts', 'a brown coconut'],
     tips: {
       look: ['喝椰子水選青綠色的嫩椰、外皮光滑無裂'],
@@ -348,6 +382,7 @@ export const FRUITS = [
   },
   {
     id: 'rambutan', name: '紅毛丹', emoji: '🔴', season: '5–9 月（進口）',
+    cue: '紅色，長滿軟毛',
     names: ['rambutans', 'red hairy rambutan fruits', 'a bunch of rambutans'],
     tips: {
       look: ['果皮鮮紅', '軟刺（毛）挺直，尖端帶綠或鮮紅'],
@@ -358,6 +393,7 @@ export const FRUITS = [
   },
   {
     id: 'mulberry', name: '桑椹', emoji: '⚫', season: '3–4 月',
+    cue: '紫黑色，小顆粒聚合成長條',
     names: ['mulberries', 'dark purple mulberries', 'ripe black mulberry fruits'],
     tips: {
       look: ['顏色紫黑、果粒飽滿有光澤；紅色的還沒熟、偏酸'],
@@ -367,6 +403,7 @@ export const FRUITS = [
   },
   {
     id: 'fig', name: '無花果', emoji: '🟣', season: '6–11 月',
+    cue: '水滴形，紫色或綠色',
     names: ['a fig', 'fresh purple figs', 'a fig cut in half'],
     tips: {
       look: ['果實飽滿、果皮顏色均勻', '底部的小孔微微張開代表熟了'],
@@ -377,6 +414,7 @@ export const FRUITS = [
   },
   {
     id: 'pomegranate', name: '紅石榴', emoji: '🔴', season: '9–2 月（進口）',
+    cue: '紅色圓殼，頂端有冠',
     names: ['a pomegranate', 'red pomegranates', 'an opened pomegranate showing red seeds'],
     tips: {
       look: ['果皮紅豔有光澤', '外形微微有稜角，代表裡面的籽飽滿'],
@@ -387,6 +425,7 @@ export const FRUITS = [
   },
   {
     id: 'raspberry', name: '覆盆莓', emoji: '🍓', season: '全年（進口）',
+    cue: '小顆紅色，中空顆粒狀',
     names: ['raspberries', 'small red raspberries made of tiny round drupelets', 'raspberries with hollow centers'],
     tips: {
       look: ['顏色鮮紅均勻、果粒飽滿有光澤', '翻看盒底沒有紅色汁液'],
@@ -396,6 +435,7 @@ export const FRUITS = [
   },
   {
     id: 'grapefruit', name: '葡萄柚', emoji: '🍊', season: '全年（進口）',
+    cue: '大顆，黃色或粉紅皮',
     names: ['a grapefruit', 'pink grapefruits', 'a grapefruit cut in half'],
     tips: {
       look: ['果皮光滑細緻、有光澤、顏色均勻', '果形略扁的通常皮薄汁多'],
@@ -406,6 +446,7 @@ export const FRUITS = [
   },
   {
     id: 'jackfruit', name: '菠蘿蜜', emoji: '🟩', season: '6–10 月',
+    cue: '超大，綠色表面凸點',
     names: ['a jackfruit', 'a large green bumpy jackfruit', 'jackfruit cut open with yellow pods'],
     tips: {
       look: ['果皮由青綠轉黃綠、表面的刺變得平鈍'],
@@ -417,6 +458,7 @@ export const FRUITS = [
   },
   {
     id: 'roselle', name: '洛神花', emoji: '🌺', season: '9–12 月',
+    cue: '深紅色花萼，尖瓣狀',
     names: ['roselle calyces', 'deep red roselle calyces with pointed sepals', 'fresh hibiscus sabdariffa'],
     tips: {
       look: ['花萼厚實飽滿、顏色深紅鮮豔'],
@@ -427,6 +469,7 @@ export const FRUITS = [
   },
   {
     id: 'sugarcane', name: '甘蔗', emoji: '🎋', season: '11–3 月',
+    cue: '長桿狀，一節一節',
     names: ['sugarcane', 'sugar cane stalks', 'purple sugarcane stalks'],
     tips: {
       look: ['紅甘蔗外皮紫黑有光澤、白粉均勻', '節間長、粗細均勻'],
@@ -440,6 +483,7 @@ export const FRUITS = [
 export const VEGETABLES = [
   {
     id: 'cabbage', name: '高麗菜', emoji: '🥬', season: '全年（冬季最甜）',
+    cue: '圓扁葉球，淺綠色',
     names: ['a cabbage', 'a head of green cabbage', 'a round flat green cabbage', 'a round green cabbage head with wide leaves'],
     tips: {
       look: ['外葉翠綠有光澤、葉片完整', '底部切口小、新鮮不發黑'],
@@ -450,6 +494,7 @@ export const VEGETABLES = [
   },
   {
     id: 'napa_cabbage', name: '大白菜', emoji: '🥬', season: '11–3 月',
+    cue: '長筒形，白色粗梗',
     names: ['a napa cabbage', 'Chinese cabbage', 'an elongated napa cabbage with white stalks'],
     tips: {
       look: ['葉片緊密包覆、白色菜梗有光澤', '切開的看切面，中心沒有隆起的較新鮮'],
@@ -460,6 +505,7 @@ export const VEGETABLES = [
   },
   {
     id: 'broccoli', name: '青花菜', emoji: '🥦', season: '11–4 月',
+    cue: '深綠色，花蕾細密',
     names: ['broccoli', 'a head of broccoli', 'green broccoli florets'],
     tips: {
       look: ['花蕾細密、深綠色、緊實', '莖的切口濕潤新鮮、不中空'],
@@ -470,6 +516,7 @@ export const VEGETABLES = [
   },
   {
     id: 'cauliflower', name: '白花椰菜', emoji: '🤍', season: '11–3 月',
+    cue: '白色花球',
     names: ['a cauliflower', 'a head of white cauliflower', 'white cauliflower florets'],
     tips: {
       look: ['花球潔白或乳白、緊密不鬆散', '外葉翠綠'],
@@ -480,6 +527,7 @@ export const VEGETABLES = [
   },
   {
     id: 'eggplant', name: '茄子', emoji: '🍆', season: '全年（夏季盛產）',
+    cue: '細長，紫色光亮',
     names: ['an eggplant', 'long purple Asian eggplants', 'a shiny purple eggplant'],
     tips: {
       look: ['果皮深紫、有光澤、果形直挺', '蒂頭下方白色或淡綠色的那一圈越寬越新鮮'],
@@ -490,6 +538,7 @@ export const VEGETABLES = [
   },
   {
     id: 'cucumber', name: '小黃瓜', emoji: '🥒', season: '全年',
+    cue: '細長綠色，表面小刺',
     names: ['a cucumber', 'long slim green cucumbers', 'Japanese cucumbers with small spines'],
     tips: {
       look: ['表皮翠綠有光澤、小刺明顯扎手代表新鮮', '粗細均勻'],
@@ -500,6 +549,7 @@ export const VEGETABLES = [
   },
   {
     id: 'bitter_melon', name: '苦瓜', emoji: '🥒', season: '5–10 月',
+    cue: '表面凹凸疙瘩',
     names: ['a bitter melon', 'a bitter gourd with warty bumpy skin', 'a pale green bitter melon covered in bumps', 'a white bitter melon'],
     tips: {
       look: ['表面顆粒大而飽滿、紋路明顯；顆粒越大苦味通常越淡', '白玉苦瓜選潔白、綠苦瓜選亮綠'],
@@ -510,6 +560,7 @@ export const VEGETABLES = [
   },
   {
     id: 'luffa', name: '絲瓜', emoji: '🥒', season: '5–9 月',
+    cue: '長條，表面平滑或有稜線',
     names: ['a luffa', 'a long smooth green sponge gourd', 'an angled luffa with sharp ridges'],
     tips: {
       look: ['表皮翠綠、紋路清楚、帶一點白色粉末', '粗細均勻、蒂頭新鮮'],
@@ -520,6 +571,7 @@ export const VEGETABLES = [
   },
   {
     id: 'pumpkin', name: '南瓜', emoji: '🎃', season: '全年',
+    cue: '扁圓，深綠或橘色硬皮',
     names: ['a pumpkin', 'a kabocha squash', 'a dark green Japanese pumpkin', 'an orange pumpkin'],
     tips: {
       look: ['果皮顏色深、表面堅硬', '蒂頭乾燥、像木頭一樣代表熟成', '切開的選果肉深橘、籽飽滿'],
@@ -530,6 +582,7 @@ export const VEGETABLES = [
   },
   {
     id: 'corn', name: '玉米', emoji: '🌽', season: '全年',
+    cue: '黃色顆粒，外包葉片',
     names: ['an ear of corn', 'corn on the cob with husks', 'sweet corn'],
     tips: {
       look: ['外葉翠綠濕潤', '玉米鬚呈褐色、微微濕潤代表熟度剛好'],
@@ -540,6 +593,7 @@ export const VEGETABLES = [
   },
   {
     id: 'bell_pepper', name: '甜椒／青椒', emoji: '🫑', season: '全年',
+    cue: '方圓形，表皮光亮',
     names: ['a bell pepper', 'red and yellow bell peppers', 'a green bell pepper'],
     tips: {
       look: ['表皮光亮、顏色鮮豔均勻', '蒂頭鮮綠'],
@@ -550,6 +604,7 @@ export const VEGETABLES = [
   },
   {
     id: 'sweet_potato', name: '地瓜', emoji: '🍠', season: '全年',
+    cue: '紡錘形，紅紫色皮',
     names: ['a sweet potato', 'sweet potatoes with purple-red skin', 'tapered reddish sweet potatoes'],
     tips: {
       look: ['外皮光滑完整、顏色鮮明', '胖胖的紡錘形、鬚根和凹洞少'],
@@ -559,6 +614,7 @@ export const VEGETABLES = [
   },
   {
     id: 'potato', name: '馬鈴薯', emoji: '🥔', season: '全年（冬春盛產）',
+    cue: '圓形，淺褐色皮',
     names: ['a potato', 'round brown potatoes', 'raw potatoes with light brown skin'],
     tips: {
       look: ['外皮光滑乾淨、形狀圓整、芽眼淺'],
@@ -569,6 +625,7 @@ export const VEGETABLES = [
   },
   {
     id: 'carrot', name: '紅蘿蔔', emoji: '🥕', season: '12–4 月',
+    cue: '橘色長錐形',
     names: ['a carrot', 'orange carrots', 'a bunch of carrots', 'orange carrots with green leafy tops'],
     tips: {
       look: ['顏色橙紅鮮豔、表皮光滑', '上下粗細差不多、頂部的芯小'],
@@ -579,6 +636,7 @@ export const VEGETABLES = [
   },
   {
     id: 'daikon', name: '白蘿蔔', emoji: '🤍', season: '11–3 月',
+    cue: '白色粗長條',
     names: ['a daikon radish', 'a long thick white radish root', 'white daikon radishes with green leaves'],
     tips: {
       look: ['表皮白皙光滑有光澤、鬚根少', '有葉子的選葉子翠綠'],
@@ -589,6 +647,7 @@ export const VEGETABLES = [
   },
   {
     id: 'onion', name: '洋蔥', emoji: '🧅', season: '2–5 月',
+    cue: '圓形，褐色薄皮',
     names: ['an onion', 'yellow onions', 'a brown onion'],
     tips: {
       look: ['外皮乾燥有光澤、完整', '頂端乾燥緊實'],
@@ -599,6 +658,7 @@ export const VEGETABLES = [
   },
   {
     id: 'bamboo_shoot', name: '竹筍', emoji: '🎋', season: '5–9 月',
+    cue: '牛角形，包著筍殼',
     names: ['a bamboo shoot', 'fresh bamboo shoots with husks', 'a curved green bamboo shoot'],
     tips: {
       look: ['綠竹筍選彎彎的牛角形', '筍尖沒有出青（變綠）；出青的會苦', '底部切口白嫩濕潤'],
@@ -609,6 +669,7 @@ export const VEGETABLES = [
   },
   {
     id: 'okra', name: '秋葵', emoji: '🟩', season: '5–10 月',
+    cue: '綠色細長，有五個稜',
     names: ['okra', 'small green okra pods with a pointed tip', 'a pile of okra'],
     tips: {
       look: ['翠綠、表面細絨毛完整', '長度約 8–10 公分的最嫩'],
@@ -619,6 +680,7 @@ export const VEGETABLES = [
   },
   {
     id: 'ginger', name: '薑', emoji: '🫚', season: '嫩薑 6–9 月、老薑全年',
+    cue: '塊狀分叉，土黃色',
     names: ['ginger root', 'a knobby beige ginger rhizome', 'young ginger with pink tips'],
     tips: {
       look: ['嫩薑選表皮淡黃白、芽尖帶粉紅且光滑', '老薑選表皮乾燥、紋路明顯'],
@@ -629,6 +691,7 @@ export const VEGETABLES = [
   },
   {
     id: 'tomato', name: '大番茄', emoji: '🍅', season: '12–4 月',
+    cue: '大顆紅色圓形',
     names: ['a large red tomato', 'big round red tomatoes', 'beefsteak tomatoes'],
     tips: {
       look: ['果色紅潤均勻、果形圓整、蒂頭鮮綠'],
@@ -639,6 +702,7 @@ export const VEGETABLES = [
   },
   {
     id: 'zucchini', name: '櫛瓜', emoji: '🥒', season: '全年',
+    cue: '圓柱長條，表皮光滑',
     names: ['a zucchini', 'green zucchini squash', 'yellow zucchini'],
     tips: {
       look: ['表皮鮮綠或金黃、光滑有光澤', '中小型（約 20 公分）較嫩、粗細均勻'],
@@ -649,6 +713,7 @@ export const VEGETABLES = [
   },
   {
     id: 'lotus_root', name: '蓮藕', emoji: '🪷', season: '7–11 月',
+    cue: '一節一節，切面有孔洞',
     names: ['a lotus root', 'lotus root sections', 'sliced lotus root showing holes'],
     tips: {
       look: ['外皮淡黃褐色、顏色自然；太白可能漂白過', '藕節粗短飽滿；切面孔洞大小均勻、沒有黑點'],
@@ -659,6 +724,7 @@ export const VEGETABLES = [
   },
   {
     id: 'taro', name: '芋頭', emoji: '🟤', season: '8–11 月',
+    cue: '褐色，有環紋和鬚毛',
     names: ['a taro root', 'a hairy brown taro corm with ring marks', 'peeled taro with purple speckles', 'large round taro roots'],
     tips: {
       look: ['外形勻稱、環紋明顯、鬚根少', '切面的紫紅色細點越多越香鬆'],
@@ -670,6 +736,7 @@ export const VEGETABLES = [
   },
   {
     id: 'chinese_yam', name: '山藥', emoji: '🤍', season: '11–3 月',
+    cue: '長棍狀，褐皮多鬚根',
     names: ['a Chinese yam', 'a long light brown hairy yam tuber', 'nagaimo yam', 'sliced white Chinese yam'],
     tips: {
       look: ['表皮完整、鬚根少、外形挺直粗細均勻', '切口潔白不變色'],
@@ -681,6 +748,7 @@ export const VEGETABLES = [
   },
   {
     id: 'burdock', name: '牛蒡', emoji: '🪵', season: '11–3 月',
+    cue: '細長深褐色的根',
     names: ['a burdock root', 'long thin brown burdock roots', 'gobo root'],
     tips: {
       look: ['外皮完整無裂、筆直、粗細均勻', '粗細約一元硬幣最好，太粗可能空心'],
@@ -691,6 +759,7 @@ export const VEGETABLES = [
   },
   {
     id: 'king_oyster', name: '杏鮑菇', emoji: '🍄', season: '全年',
+    cue: '粗白菇柄，小菇傘',
     names: ['king oyster mushrooms', 'thick white king trumpet mushrooms', 'eryngii mushrooms'],
     tips: {
       look: ['菌傘沒有完全張開、菇柄粗白', '表面乾爽'],
@@ -701,6 +770,7 @@ export const VEGETABLES = [
   },
   {
     id: 'shiitake', name: '香菇', emoji: '🍄', season: '全年',
+    cue: '褐色菇傘，有花紋',
     names: ['shiitake mushrooms', 'brown shiitake mushroom caps', 'fresh shiitake mushrooms'],
     tips: {
       look: ['菌傘厚實、邊緣內捲', '菌褶白而整齊'],
@@ -712,6 +782,7 @@ export const VEGETABLES = [
   },
   {
     id: 'enoki', name: '金針菇', emoji: '🍄', season: '全年',
+    cue: '細長白色，成束',
     names: ['enoki mushrooms', 'a cluster of long thin white enoki mushrooms with tiny caps', 'a pack of enoki mushrooms'],
     tips: {
       look: ['菇體潔白或乳白、菌傘小而完整', '根部不發黃'],
@@ -722,6 +793,7 @@ export const VEGETABLES = [
   },
   {
     id: 'asparagus', name: '蘆筍', emoji: '🌱', season: '3–10 月',
+    cue: '細長綠莖，尖頭',
     names: ['asparagus spears', 'a bundle of green asparagus', 'white asparagus'],
     tips: {
       look: ['筍尖緊密不散開、筆直', '綠蘆筍選翠綠、白蘆筍選潔白；切口濕潤'],
@@ -732,6 +804,7 @@ export const VEGETABLES = [
   },
   {
     id: 'green_beans', name: '四季豆', emoji: '🫛', season: '全年',
+    cue: '細長圓形豆莢',
     names: ['green beans', 'string beans', 'fresh green bean pods'],
     tips: {
       look: ['豆莢翠綠飽滿、粗細均勻、沒有斑點'],
@@ -743,6 +816,7 @@ export const VEGETABLES = [
   },
   {
     id: 'edamame', name: '毛豆', emoji: '🫛', season: '全年',
+    cue: '扁豆莢，有絨毛',
     names: ['edamame', 'green soybean pods with fuzz', 'fresh edamame pods'],
     tips: {
       look: ['豆莢翠綠、絨毛完整、豆粒飽滿'],
@@ -752,6 +826,7 @@ export const VEGETABLES = [
   },
   {
     id: 'garlic', name: '大蒜', emoji: '🧄', season: '2–4 月',
+    cue: '白色球狀，一瓣一瓣',
     names: ['a garlic bulb', 'heads of garlic', 'white garlic bulbs'],
     tips: {
       look: ['外皮乾燥完整、蒜瓣飽滿'],
@@ -762,6 +837,7 @@ export const VEGETABLES = [
   },
   {
     id: 'chili', name: '辣椒', emoji: '🌶️', season: '全年',
+    cue: '細長尖形，紅或綠',
     names: ['red chili peppers', 'hot chili peppers', 'small red and green chilies'],
     tips: {
       look: ['表皮光亮、顏色鮮豔、蒂頭鮮綠'],
@@ -773,6 +849,7 @@ export const VEGETABLES = [
   },
   {
     id: 'water_bamboo', name: '茭白筍', emoji: '🎍', season: '5–10 月',
+    cue: '綠殼包著白色筍身',
     names: ['water bamboo shoots', 'Manchurian wild rice stems', 'peeled white water bamboo shoots'],
     tips: {
       look: ['筍殼翠綠、筍身潔白', '剝開的筍肉白嫩、沒有黑點（有黑點代表老了）'],
@@ -783,6 +860,7 @@ export const VEGETABLES = [
   },
   {
     id: 'winter_melon', name: '冬瓜', emoji: '🍈', season: '5–9 月',
+    cue: '超大深綠，帶白粉',
     names: ['a winter melon', 'a large green wax gourd with white powder', 'sliced winter melon with white flesh'],
     tips: {
       look: ['切塊的選果肉潔白厚實、籽少', '整顆的選外皮深綠、帶一層白粉'],
@@ -793,6 +871,7 @@ export const VEGETABLES = [
   },
   {
     id: 'chayote', name: '佛手瓜', emoji: '🍐', season: '全年（秋冬盛產）',
+    cue: '淡綠梨形，有溝紋',
     names: ['a chayote', 'pale green chayote squash', 'a pear-shaped chayote'],
     tips: {
       look: ['表皮淡綠光滑、溝紋淺、小刺少', '個頭中小、形狀飽滿'],
@@ -803,6 +882,7 @@ export const VEGETABLES = [
   },
   {
     id: 'celery', name: '芹菜', emoji: '🥬', season: '11–4 月',
+    cue: '長莖成束，淺綠色',
     names: ['celery', 'a bunch of pale green celery stalks', 'long ribbed celery stalks with leaves'],
     tips: {
       look: ['葉子翠綠不黃、莖梗挺直有光澤'],
@@ -813,6 +893,7 @@ export const VEGETABLES = [
   },
   {
     id: 'green_onion', name: '青蔥', emoji: '🌿', season: '全年（冬季最好）',
+    cue: '白色蔥白，綠色中空葉',
     names: ['green onions', 'scallions', 'a bunch of spring onions'],
     tips: {
       look: ['蔥白長而潔白、蔥葉翠綠挺直', '根部鬚根完整'],
@@ -823,6 +904,7 @@ export const VEGETABLES = [
   },
   {
     id: 'button_mushroom', name: '洋菇', emoji: '🍄', season: '全年（冬季盛產）',
+    cue: '白色圓形菇傘',
     names: ['white button mushrooms', 'champignon mushrooms', 'round white button mushrooms with short stems'],
     tips: {
       look: ['菌傘潔白圓整', '傘緣內捲、緊貼菌柄，看不到菌褶的最新鮮'],
@@ -833,6 +915,7 @@ export const VEGETABLES = [
   },
   {
     id: 'wood_ear', name: '黑木耳', emoji: '⚫', season: '全年',
+    cue: '黑褐色，像耳朵',
     names: ['wood ear mushrooms', 'black fungus', 'fresh black wood ear fungus'],
     tips: {
       look: ['耳片厚實、黑褐有光澤'],
@@ -844,6 +927,7 @@ export const VEGETABLES = [
   },
   {
     id: 'water_caltrop', name: '菱角', emoji: '🖤', season: '9–11 月',
+    cue: '黑色，兩個尖角',
     names: ['water caltrops', 'black horned water chestnuts', 'bat nuts'],
     tips: {
       look: ['外殼紫黑有光澤、兩個角完整', '剝好的菱角仁選白淨的'],
@@ -855,6 +939,7 @@ export const VEGETABLES = [
   },
   {
     id: 'bean_sprouts', name: '豆芽菜', emoji: '🌱', season: '全年',
+    cue: '白色細莖，一大把',
     names: ['bean sprouts', 'mung bean sprouts', 'a pile of white bean sprouts'],
     tips: {
       look: ['莖白胖、粗細均勻、根短', '顏色自然；白得異常發亮可能漂白過'],
@@ -865,6 +950,7 @@ export const VEGETABLES = [
   },
   {
     id: 'baby_corn', name: '玉米筍', emoji: '🌽', season: '全年',
+    cue: '小根淡黃，顆粒細小',
     names: ['baby corn', 'young baby corn cobs', 'baby corn with husks'],
     tips: {
       look: ['筍身淡黃、顆粒排列整齊', '長度均勻，約 8–10 公分'],
@@ -875,6 +961,7 @@ export const VEGETABLES = [
   },
   {
     id: 'snow_peas', name: '豌豆莢／甜豆', emoji: '🫛', season: '11–3 月',
+    cue: '扁平或飽滿的綠豆莢',
     names: ['snow peas', 'flat green snow pea pods', 'sugar snap peas'],
     tips: {
       look: ['豆莢翠綠有光澤', '豌豆莢選扁平、豆粒不明顯的；豆粒太凸代表老了'],
@@ -885,6 +972,7 @@ export const VEGETABLES = [
   },
   {
     id: 'beetroot', name: '甜菜根', emoji: '🟥', season: '12–3 月',
+    cue: '圓形，暗紅紫色',
     names: ['a beetroot', 'red beets', 'beetroots with leaves'],
     tips: {
       look: ['表皮暗紅光滑、形狀圓整', '帶葉的選葉子新鮮'],
@@ -895,6 +983,7 @@ export const VEGETABLES = [
   },
   {
     id: 'red_cabbage', name: '紫高麗', emoji: '🟣', season: '11–3 月',
+    cue: '紫色葉球',
     names: ['a red cabbage', 'a head of purple cabbage', 'purple cabbage'],
     tips: {
       look: ['葉色深紫有光澤、葉球緊實'],

@@ -125,6 +125,18 @@ body.found #reticle span { border-color: var(--accent); }
 .tip-group li { font-size: 15px; line-height: 1.6; }
 .hint { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 10px 0 0; }
 
+/* 易混淆時的二選一 */
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.choice {
+  display: grid; justify-items: center; gap: 4px; padding: 14px 8px;
+  font: inherit; color: var(--text); cursor: pointer; text-align: center;
+  background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 16px;
+}
+.choice:active { border-color: var(--accent); }
+.choice-emoji { font-size: 30px; }
+.choice b { font-size: 17px; }
+.choice small { color: var(--muted); font-size: 13px; line-height: 1.4; }
+
 /* 操作按鈕固定在資訊卡底部，內容再長也按得到 */
 .actions {
   display: flex; gap: 8px; margin-top: 12px;

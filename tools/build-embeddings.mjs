@@ -1,5 +1,5 @@
 // 事先算好每種水果的 CLIP 文字特徵，手機端就只需要下載影像模型。
-// 用法：cd tools && npm install && node build-embeddings.mjs
+// 用法：cd tools && npm install && node build-embeddings.mjs && node train.mjs
 import { writeFile } from 'node:fs/promises';
 import { AutoTokenizer, CLIPTextModelWithProjection } from '@huggingface/transformers';
 import { FRUITS, VEGETABLES, BACKGROUNDS } from '../fruits.js';
@@ -40,5 +40,6 @@ for (const [i, text] of BACKGROUNDS.entries()) {
   classes.push({ id: `bg_${i}`, embedding: meanNormalized(await embed([text])) });
 }
 
-await writeFile(new URL('../embeddings.json', import.meta.url), JSON.stringify({ model: MODEL_ID, classes }));
+// 中間檔：train.mjs 會再用參考照片調整，產出 App 用的 ../embeddings.json
+await writeFile(new URL('./text-embeddings.json', import.meta.url), JSON.stringify({ model: MODEL_ID, classes }));
 console.log(`wrote ${classes.length} classes`);

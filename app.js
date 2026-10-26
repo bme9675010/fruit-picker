@@ -18,6 +18,9 @@ const CPU_KEY = 'fp-cpu';
 const EMA = 0.45;            // 新結果的權重，越小畫面越穩定
 const SHOW_AT = 0.45;        // 機率超過這個值才顯示為辨識結果
 const DROP_AT = 0.25;        // 目前顯示的水果低於這個值才換掉
+const ASK_MARGIN = 0.3;      // 前兩名差距小於這個值、且第二名夠高時，請使用者二選一
+const ASK_MIN2 = 0.1;
+const SURE_AT = 0.6;         // 目前顯示的蔬果高於這個值就不再詢問
 const LOGIT_SCALE = 100;
 // 使用者教過的畫面（手動選水果時記下的影像特徵），用 Tip-Adapter 的方式加分
 const PROTO_KEY = 'fruit-protos-v1';
@@ -37,6 +40,8 @@ const els = {
 const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES].map((f) => [f.id, f]));
 
 let processor, vision, classes, textMatrix, modelId;
+// 內建參考樣本（真實照片的影像特徵，見 tools/train.mjs）
+let refVecs = [], refLabels = [], refAlpha = 0, refBeta = 0;
 let stream = null;
 let paused = false;
 let pinned = null;          // 使用者手動選的水果 id，有值時不再自動辨識
@@ -96,6 +101,14 @@ function loadModel() {
     const data = await fetch('embeddings.json').then((r) => r.json());
     classes = data.classes.map((c) => c.id);
     textMatrix = data.classes.map((c) => Float32Array.from(c.embedding));
+    if (data.refs) {
+      const { file, dim, labels, scales, alpha, beta } = data.refs;
+      const buf = new Int8Array(await fetch(file).then((r) => r.arrayBuffer()));
+      refVecs = labels.map((_, i) => Float32Array.from(buf.subarray(i * dim, (i + 1) * dim), (x) => x * scales[i]));
+      refLabels = labels;
+      refAlpha = alpha;
+      refBeta = beta;
+    }
 
     const progress_callback = (p) => {
       if (p.status === 'progress' && p.file?.endsWith('.onnx')) {
@@ -153,10 +166,16 @@ async function classify(image) {
     for (let i = 0; i < a.length; i++) s += a[i] * v[i];
     return s;
   };
+  // 每一類取最像的一張參考樣本加分（內建樣本＋使用者教過的畫面）
+  const builtin = new Float64Array(classes.length);
+  for (let i = 0; i < refVecs.length; i++) {
+    const b = Math.exp(-refBeta * (1 - dot(refVecs[i])));
+    if (b > builtin[refLabels[i]]) builtin[refLabels[i]] = b;
+  }
   const logits = textMatrix.map((t, c) => {
-    let boost = 0;
-    for (const p of protos[classes[c]] ?? []) boost = Math.max(boost, Math.exp(-PROTO_BETA * (1 - dot(p))));
-    return dot(t) * LOGIT_SCALE + PROTO_ALPHA * boost;
+    let boost = refAlpha * builtin[c];
+    for (const p of protos[classes[c]] ?? []) boost = Math.max(boost, PROTO_ALPHA * Math.exp(-PROTO_BETA * (1 - dot(p))));
+    return dot(t) * LOGIT_SCALE + boost;
   });
   const max = Math.max(...logits);
   const exps = logits.map((l) => Math.exp(l - max));
@@ -267,8 +286,14 @@ function render(probs, live) {
     shown = null;
   }
 
-  document.body.classList.toggle('found', !!shown);
-  if (shown) {
+  // 前兩名很接近：與其猜錯，不如讓使用者二選一
+  const second = ranked[1];
+  const ask = second.p >= ASK_MIN2 && top.p - second.p < ASK_MARGIN && !(shown && prob[shown] >= SURE_AT);
+
+  document.body.classList.toggle('found', !!shown && !ask);
+  if (ask) {
+    showChoice(top.id, second.id);
+  } else if (shown) {
     showFruit(shown, `${live ? '即時辨識' : '照片辨識'}・信心 <b>${Math.round(prob[shown] * 100)}%</b>`);
   } else {
     showSearching(live);
@@ -277,6 +302,33 @@ function render(probs, live) {
 }
 
 let tipsFor = null;
+function showChoice(a, b) {
+  const key = [a, b].sort().join('|');
+  if (tipsFor === key) return;
+  tipsFor = key;
+  els.emoji.textContent = '🤔';
+  els.name.textContent = '是哪一個？';
+  els.meta.textContent = '這兩種很像，點選正確的那個（App 也會記住）';
+  const wrap = document.createElement('div');
+  wrap.className = 'choices';
+  for (const id of [a, b]) {
+    const f = fruitById[id];
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    const emoji = document.createElement('span');
+    emoji.className = 'choice-emoji';
+    emoji.textContent = f.emoji;
+    const name = document.createElement('b');
+    name.textContent = f.name;
+    const cue = document.createElement('small');
+    cue.textContent = f.cue;
+    btn.append(emoji, name, cue);
+    btn.onclick = () => pin(id);
+    wrap.append(btn);
+  }
+  els.tips.replaceChildren(wrap);
+}
+
 function showFruit(id, metaHtml) {
   const f = fruitById[id];
   els.emoji.textContent = f.emoji;
@@ -389,8 +441,12 @@ async function analyzeFile(file) {
   els.pauseBtn.textContent = stream ? '📷 回到相機' : '↩ 返回';
   pinned = null;
   shown = null;
+  tipsFor = null;
+  els.emoji.textContent = '⏳';
   els.name.textContent = '分析照片中…';
   els.meta.textContent = '';
+  els.tips.replaceChildren();
+  els.chips.replaceChildren();
   try {
     await loadModel();
     if (req !== photoRequest) return;
