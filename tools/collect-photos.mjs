@@ -6,8 +6,11 @@ import { createHash } from 'node:crypto';
 import { FRUITS, VEGETABLES } from '../fruits.js';
 
 const UA = 'fruit-picker/0.1 (https://github.com/bme9675010/fruit-picker)';
-const PER_CLASS = 40;
-const EXCLUDE = '-painting -drawing -illustration -engraving -flower -flowers -blossom -tree -seedling -leaf -dish -soup -salad -cake -recipe -map -stamp -logo';
+const PER_CLASS = 80;
+const ENOUGH = 60;        // 已有這麼多張就不再搜尋
+// 葉菜類的照片本來就是葉子，不能排除 leaf
+const LEAFY = new Set(['bok_choy', 'lettuce', 'spinach', 'water_spinach', 'chives', 'basil', 'cilantro', 'celery', 'green_onion']);
+const exclude = (id) => `-painting -drawing -illustration -engraving -flower -flowers -blossom -tree -seedling ${LEAFY.has(id) ? '' : '-leaf'} -dish -soup -salad -cake -recipe -map -stamp -logo`;
 const dir = new URL('./photos/', import.meta.url);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -24,10 +27,10 @@ async function get(url, as = 'json') {
   throw new Error(`gave up ${url}`);
 }
 
-async function search(query) {
+async function search(query, id, offset = 0) {
   const api = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6'
-    + '&gsrlimit=30&prop=imageinfo&iiprop=url|mime&iiurlwidth=336&gsrsearch='
-    + encodeURIComponent(`${query} ${EXCLUDE} filetype:bitmap`);
+    + `&gsrlimit=30&gsroffset=${offset}&prop=imageinfo&iiprop=url|mime&iiurlwidth=336&gsrsearch=`
+    + encodeURIComponent(`${query} ${exclude(id)} filetype:bitmap`);
   const data = await get(api);
   return Object.values(data.query?.pages ?? {})
     .filter((p) => /jpeg|png|webp/.test(p.imageinfo?.[0]?.mime ?? ''))
@@ -45,8 +48,14 @@ const EXTRA_QUERIES = {
   jujube: ['Ziziphus mauritiana fruit', 'Indian jujube'], shiitake: ['shiitake', 'Lentinula edodes'],
   bamboo_shoot: ['bamboo shoots', 'takenoko'], asparagus: ['asparagus', 'asparagus spears'],
   sugarcane: ['sugarcane', 'Saccharum officinarum stalks'], ginger: ['ginger rhizome', 'ginger root'], lotus_root: ['lotus root', 'renkon'],
+  kumquat: ['kumquat', 'Citrus japonica fruit'], oriental_melon: ['Cucumis melo makuwa', 'oriental melon'],
+  green_plum: ['Prunus mume fruit', 'ume'], dates: ['date fruit', 'Phoenix dactylifera fruit'], european_pear: ['Pyrus communis fruit'],
+  blackberry: ['Rubus fruticosus fruit'], water_spinach: ['Ipomoea aquatica', 'kangkong'], chives: ['Allium tuberosum'],
+  basil: ['Ocimum basilicum', 'Thai basil'], cilantro: ['Coriandrum sativum leaves', 'coriander'], bok_choy: ['bok choy', 'pak choi'],
+  lettuce: ['lettuce', 'Lactuca sativa'], spinach: ['Spinacia oleracea'], kohlrabi: ['kohlrabi'], radish: ['Raphanus sativus radish'],
+  oyster_mushroom: ['Pleurotus ostreatus'], shimeji: ['Hypsizygus tessellatus', 'bunashimeji'], yardlong_bean: ['Vigna unguiculata sesquipedalis'],
+  lima_bean: ['Phaseolus lunatus'], shallot: ['shallot'],
 };
-const MIN_PER_CLASS = 20;
 const exists = (p) => access(p).then(() => true, () => false);
 const indexFile = new URL('index.json', dir);
 const index = (await exists(indexFile)) ? JSON.parse(await readFile(indexFile, 'utf8')) : {};
@@ -74,17 +83,24 @@ async function worker() {
 }
 const workers = [worker(), worker(), worker(), worker()];
 
-for (const [items, kind] of [[FRUITS, 'fruit'], [VEGETABLES, 'vegetable']]) {
-  for (const item of items) {
-    if (index[item.id]?.length >= MIN_PER_CLASS || (index[item.id]?.length && !EXTRA_QUERIES[item.id])) continue;
+// 同時搜尋 3 種蔬果
+const todo = [...FRUITS.map((item) => [item, 'fruit']), ...VEGETABLES.map((item) => [item, 'vegetable'])]
+  .filter(([item]) => !(index[item.id]?.length >= ENOUGH));
+async function searcher() {
+  for (let next = todo.shift(); next; next = todo.shift()) {
+    const [item, kind] = next;
     const seen = new Map((index[item.id] ?? []).map((h) => [h.title, h]));
+    const plain = (n) => n.replace(/^(a|an) /, '');
     const queries = [
-      ...(index[item.id] ? [] : item.names.slice(0, 3).map((n) => `${n.replace(/^(a|an) /, '')} ${kind}`)),
+      ...item.names.slice(0, 3).map((n) => `${plain(n)} ${kind}`),
       ...(EXTRA_QUERIES[item.id] ?? []),
+      plain(item.names[0]), `${plain(item.names[0])} market`,
     ];
-    for (const q of queries) {
-      for (const hit of await search(q)) seen.set(hit.title, hit);
-      if (seen.size >= PER_CLASS) break;
+    search: for (const q of queries) {
+      for (const offset of [0, 30]) {
+        for (const hit of await search(q, item.id, offset)) seen.set(hit.title, hit);
+        if (seen.size >= PER_CLASS) break search;
+      }
     }
     index[item.id] = [...seen.values()].slice(0, PER_CLASS).map((h) => ({
       ...h,
@@ -95,6 +111,7 @@ for (const [items, kind] of [[FRUITS, 'fruit'], [VEGETABLES, 'vegetable']]) {
     await writeFile(indexFile, JSON.stringify(index, null, 1));
   }
 }
+await Promise.all([searcher(), searcher(), searcher()]);
 searching = false;
 await Promise.all(workers);
 console.log(`done ${done}, failed ${failed}`);

@@ -478,6 +478,74 @@ export const FRUITS = [
       store: ['削好的冷藏，盡快吃完'],
     },
   },
+  {
+    id: 'kumquat', name: '金桔', emoji: '🍊', season: '11–3 月',
+    cue: '小顆橢圓，金黃色',
+    names: ['kumquats', 'tiny oval kumquats the size of grapes', 'small kumquats with green leaves on a branch'],
+    tips: {
+      look: ['果皮金黃有光澤、顏色均勻、果形飽滿', '帶葉子的通常比較新鮮'],
+      touch: ['硬實有彈性'],
+      other: ['可以連皮整顆吃，也很適合做金桔醬'],
+      avoid: ['果皮乾皺、軟爛'],
+      store: ['冷藏'],
+    },
+  },
+  {
+    id: 'oriental_melon', name: '美濃瓜', emoji: '🍈', season: '3–6 月',
+    cue: '淡綠到乳白，橢圓光滑',
+    names: ['a pale green oriental melon', 'a smooth light green melon', 'small oval light green melons'],
+    tips: {
+      look: ['果皮淡綠到乳白、有光澤', '果形飽滿端正'],
+      touch: ['拿起來沉、底部按壓微有彈性'],
+      smell: ['底部聞得到香氣'],
+      avoid: ['裂痕、軟爛'],
+      store: ['熟了冷藏'],
+    },
+  },
+  {
+    id: 'blackberry', name: '黑莓', emoji: '🫐', season: '全年（進口）',
+    cue: '黑色，小顆粒聚合成圓胖狀',
+    names: ['blackberries', 'glossy black blackberries', 'a box of blackberries'],
+    tips: {
+      look: ['果粒飽滿、紫黑色有光澤', '整顆黑透；還帶紅色的沒熟、偏酸'],
+      avoid: ['出水、發霉、壓扁'],
+      store: ['不洗直接冷藏，1–2 天內吃完'],
+    },
+  },
+  {
+    id: 'european_pear', name: '西洋梨', emoji: '🍐', season: '8–2 月（進口）',
+    cue: '葫蘆形，上窄下寬',
+    names: ['a European pear', 'green Bartlett pears', 'pear-shaped pears with long necks'],
+    tips: {
+      look: ['顏色依品種均勻（綠、黃或紅）、沒有碰傷'],
+      touch: ['買回要放常溫後熟，輕壓蒂頭周圍微軟就可以吃'],
+      avoid: ['表皮大片褐斑、軟爛'],
+      store: ['未熟放常溫，熟了冷藏'],
+    },
+  },
+  {
+    id: 'green_plum', name: '青梅', emoji: '🟢', season: '3–4 月',
+    cue: '小圓青綠，表面細絨毛',
+    names: ['green ume plums', 'unripe green plums', 'Japanese apricot fruits'],
+    tips: {
+      look: ['果皮青綠有光澤、大小均勻、細絨毛完整'],
+      touch: ['硬實'],
+      other: ['做脆梅選硬的青梅；釀梅酒可用稍熟一點的'],
+      avoid: ['有斑點、碰傷、果皮轉黃'],
+      store: ['買回盡快處理，暫放冷藏'],
+    },
+  },
+  {
+    id: 'dates', name: '椰棗', emoji: '🟫', season: '全年（進口）',
+    cue: '橢圓深褐，表皮有皺紋',
+    names: ['dates', 'medjool dates', 'brown date palm fruits'],
+    tips: {
+      look: ['顏色深褐均勻、有光澤、果肉飽滿'],
+      touch: ['柔軟有彈性，不乾硬'],
+      avoid: ['發霉、蟲孔、有酸味'],
+      store: ['密封冷藏'],
+    },
+  },
 ];
 
 export const VEGETABLES = [
@@ -990,6 +1058,135 @@ export const VEGETABLES = [
       touch: ['拿起來沉、結實'],
       avoid: ['外葉枯萎、切口變黑'],
       store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'bok_choy', name: '青江菜', emoji: '🥬', season: '全年（冬季最好）',
+    cue: '湯匙狀的淡綠葉柄',
+    names: ['bok choy', 'baby bok choy', 'green pak choi with spoon-shaped stalks'],
+    tips: {
+      look: ['葉片翠綠、葉柄淡綠肥厚、整株挺立', '底部切口新鮮'],
+      avoid: ['葉片發黃、有破洞、軟爛'],
+      store: ['用紙包好冷藏，2–3 天內吃完'],
+    },
+  },
+  {
+    id: 'lettuce', name: '萵苣（大陸妹／蘿蔓）', emoji: '🥬', season: '全年',
+    cue: '葉片大而薄，邊緣捲曲',
+    names: ['lettuce', 'a head of romaine lettuce', 'green leaf lettuce'],
+    tips: {
+      look: ['葉片鮮綠有光澤、沒有黃葉', '底部切口白淨、沒有變紅'],
+      avoid: ['切口變紅褐、葉片軟爛'],
+      store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'water_spinach', name: '空心菜', emoji: '🌿', season: '4–10 月',
+    cue: '細長中空的莖，箭形葉',
+    names: ['water spinach', 'kangkong', 'morning glory vegetable with hollow stems'],
+    tips: {
+      look: ['葉片翠綠、莖細嫩', '莖的斷面中空濕潤'],
+      touch: ['莖一折就斷代表嫩'],
+      avoid: ['莖太粗太老、葉片發黃、切口變黑'],
+      store: ['用紙包好冷藏，1–2 天內吃完'],
+    },
+  },
+  {
+    id: 'basil', name: '九層塔', emoji: '🌿', season: '全年（夏季最多）',
+    cue: '小綠葉，紫色莖或花穗',
+    names: ['Thai basil', 'basil leaves', 'sweet basil sprigs'],
+    tips: {
+      look: ['葉片翠綠、沒有黑斑'],
+      smell: ['香氣濃'],
+      avoid: ['葉片發黑、萎軟'],
+      store: ['九層塔怕冷：用紙包好放冰箱蔬果室，或插在水裡放常溫'],
+    },
+  },
+  {
+    id: 'cilantro', name: '香菜', emoji: '🌿', season: '全年（冬季最好）',
+    cue: '細碎的羽狀綠葉',
+    names: ['cilantro', 'fresh coriander leaves', 'a bunch of coriander'],
+    tips: {
+      look: ['葉片翠綠、莖細嫩'],
+      smell: ['香氣濃'],
+      avoid: ['葉片發黃、根部腐爛'],
+      store: ['帶根用紙包好冷藏，或插在水裡'],
+    },
+  },
+  {
+    id: 'kohlrabi', name: '大頭菜', emoji: '🟢', season: '11–3 月',
+    cue: '淡綠圓球，側邊長出葉柄',
+    names: ['kohlrabi', 'a pale green kohlrabi bulb', 'kohlrabi with stems'],
+    tips: {
+      look: ['球莖圓整、表皮光滑淡綠、沒有裂痕', '葉柄切口新鮮'],
+      touch: ['拿起來沉、硬實；太大的纖維較粗'],
+      avoid: ['表皮裂開'],
+      store: ['冷藏'],
+    },
+  },
+  {
+    id: 'radish', name: '櫻桃蘿蔔', emoji: '🔴', season: '12–4 月',
+    cue: '小顆鮮紅圓球',
+    names: ['red radishes', 'small round red radishes', 'a bunch of radishes with leaves'],
+    tips: {
+      look: ['表皮鮮紅光滑、圓整', '有葉子的選葉子翠綠'],
+      touch: ['硬實'],
+      avoid: ['裂開、變軟（可能空心）'],
+      store: ['切掉葉子後冷藏'],
+    },
+  },
+  {
+    id: 'oyster_mushroom', name: '秀珍菇', emoji: '🍄', season: '全年',
+    cue: '扇形灰白菇傘',
+    names: ['oyster mushrooms', 'grey oyster mushroom clusters', 'Pleurotus ostreatus'],
+    tips: {
+      look: ['菌傘完整、灰白或淺褐、邊緣不破裂'],
+      touch: ['乾爽有彈性'],
+      avoid: ['出水黏滑、變黃'],
+      store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'shimeji', name: '鴻喜菇', emoji: '🍄', season: '全年',
+    cue: '一叢小圓菇傘，細長菇柄',
+    names: ['shimeji mushrooms', 'brown beech mushrooms', 'a cluster of small capped mushrooms'],
+    tips: {
+      look: ['菌傘小而圓、整叢完整緊密、顏色均勻'],
+      avoid: ['菇柄出水、變黃變軟'],
+      store: ['原包裝冷藏'],
+    },
+  },
+  {
+    id: 'yardlong_bean', name: '菜豆（長豆）', emoji: '🫛', season: '全年',
+    cue: '特別長的細豆莢',
+    names: ['yardlong beans', 'very long thin green beans', 'asparagus beans'],
+    tips: {
+      look: ['豆莢翠綠、粗細均勻、豆粒不明顯'],
+      touch: ['有彈性、折起來清脆'],
+      avoid: ['豆莢發黃、乾癟、豆粒明顯凸出'],
+      store: ['冷藏'],
+    },
+  },
+  {
+    id: 'lima_bean', name: '皇帝豆', emoji: '🫘', season: '12–3 月',
+    cue: '扁大的淡綠豆仁',
+    names: ['lima beans', 'butter beans', 'large flat pale green lima beans'],
+    tips: {
+      look: ['豆莢飽滿翠綠；剝好的豆仁選飽滿、淡綠白、表皮完整'],
+      avoid: ['豆仁發黃、乾皺、有斑點'],
+      other: ['一定要煮熟再吃'],
+      store: ['冷藏，或燙過後冷凍'],
+    },
+  },
+  {
+    id: 'shallot', name: '紅蔥頭', emoji: '🧅', season: '11–3 月',
+    cue: '小顆紫紅色，像迷你洋蔥',
+    names: ['shallots', 'small reddish-brown shallots', 'peeled shallots'],
+    tips: {
+      look: ['外皮乾燥、紫紅色、球體飽滿'],
+      touch: ['硬實'],
+      avoid: ['發芽、發軟、發霉'],
+      store: ['放通風陰涼處'],
     },
   },
 ];
