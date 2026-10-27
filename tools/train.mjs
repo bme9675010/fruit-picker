@@ -4,7 +4,7 @@
 //   +tip  ：再加上參考樣本比對（Tip-Adapter）
 // 照片依檔名雜湊固定分成 訓練 50%／驗證 20%／測試 30%，測試集只用來報告最後結果。
 // 每張照片另有「中央 70% 裁切」版本（App 只看對準框裡的畫面），訓練時當成額外資料，評估時兩種都算。
-// 也會拿目前的 ../embeddings.json（線上版本）在同一批測試照片上比較。
+// 也會拿同一個模型目前的檔案（線上版本）在同一批測試照片上比較。
 // 用法：node train.mjs           只比較、印出結果
 //       node train.mjs --write   測試集比線上版本好時，寫入 ../embeddings.json 與 ../refs.bin
 //       node train.mjs --quick   跳過參數搜尋，直接用上次選出的設定
@@ -13,7 +13,7 @@
 // 哪些照片算有效、怎麼分組，一律用 s0 判斷，所以不同模型是在同一批測試照片上比較。
 import { readFile, writeFile, access } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { badTitle } from './photo-rules.mjs';
+import { badTitle, MERGED } from './photo-rules.mjs';
 import { SFX } from './model.mjs';
 
 const WRITE = process.argv.includes('--write');
@@ -59,7 +59,8 @@ const baseScore = scorer(ids, baseText.classes.map((c) => Float32Array.from(c.em
 const vec = (f) => (f ? Float32Array.from(f) : null);
 const pos = [], neg = [];
 let dropped = 0;
-for (const [id, entries] of Object.entries(index)) {
+for (const [photoId, entries] of Object.entries(index)) {
+  const id = MERGED[photoId] ?? photoId;
   const y = ids.indexOf(id);
   if (y < 0) continue; // 已從清單移除的品項
   for (const e of entries) {
@@ -210,16 +211,16 @@ const finalScore = scorer(ids, W, qrefs.map((r) => ({ c: r.c, v: Float32Array.fr
 
 // 線上版本
 let current = null;
-if (await exists('../embeddings.json')) {
-  const cur = await load('../embeddings.json');
+// 跟同一個模型目前的檔案比較（s1 → ../embeddings-s1.json；s0 → ../embeddings.json）
+if (await exists(`../embeddings${SFX}.json`)) {
+  const cur = await load(`../embeddings${SFX}.json`);
   const curIds = cur.classes.map((c) => c.id);
   let curRefs = [];
-  if (cur.refs && (await exists('../refs.bin'))) {
-    const bin = new Int8Array(await readFile(new URL('../refs.bin', import.meta.url)));
+  if (cur.refs && (await exists(`../${cur.refs.file}`))) {
+    const bin = new Int8Array(await readFile(new URL(`../${cur.refs.file}`, import.meta.url)));
     curRefs = cur.refs.labels.map((c, i) => ({ c, v: Float32Array.from(bin.subarray(i * D, (i + 1) * D), (x) => x * cur.refs.scales[i]) }));
   }
   current = scorer(curIds, cur.classes.map((c) => Float32Array.from(c.embedding)), curRefs, cur.refs?.alpha ?? 0, cur.refs?.beta ?? 0);
-  current.base = true; // 線上版本是 s0
 }
 const curSet = current ? new Set(current.ids) : new Set();
 const oldTest = data.test.filter((s) => curSet.has(s.id)), newTest = data.test.filter((s) => !curSet.has(s.id));
@@ -242,19 +243,24 @@ if (newTest.length) {
 // 各類別（測試集原圖，文字 → 線上 → 新）
 const pick = (score, v) => score.ids[argmax(score(v).map((x, i) => (score.bg[i] ? -Infinity : x)))];
 const perClass = {};
+const stolen = {}; // 原有品項：線上版本認對、新版本卻被認成「新增品項」的照片數
 for (const s of data.test) {
   const r = (perClass[s.id] ??= { n: 0, t: 0, c: 0, b: 0 });
   r.n++;
   if (pick(textScore, s.v) === s.id) r.t++;
-  if (current && curSet.has(s.id) && pick(current, s.v0) === s.id) r.c++;
-  if (pick(finalScore, s.v) === s.id) r.b++;
+  const curOk = current && curSet.has(s.id) && pick(current, s.v) === s.id;
+  if (curOk) r.c++;
+  const p = pick(finalScore, s.v);
+  if (p === s.id) r.b++;
+  else if (curOk && !curSet.has(p)) (stolen[p] ??= []).push(s.id);
 }
 console.log('\n各類別 測試集（文字 → 線上 → 新）：');
 console.log(Object.entries(perClass).map(([id, r]) => `${id} ${r.t}→${curSet.has(id) ? r.c : '-'}→${r.b}/${r.n}`).join('  '));
-console.log('\n新增品項 測試集準確度：');
+console.log('\n新增品項 測試集準確度（以及從原有品項搶走幾張原本認對的照片）：');
 for (const id of ids.filter((x) => !x.startsWith('bg_') && !curSet.has(x))) {
   const r = perClass[id];
-  console.log(`  ${id}: ${r ? `${r.b}/${r.n}` : '沒有測試照片'}`);
+  const st = stolen[id] ?? [];
+  console.log(`  ${id}: ${r ? `${r.b}/${r.n}` : '沒有測試照片'}　搶走 ${st.length}${st.length ? `（${st.join(', ')}）` : ''}`);
 }
 
 // 二選一規則：前兩名都夠高且差距小時，請使用者選

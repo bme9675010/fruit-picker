@@ -70,11 +70,12 @@ export const FRUITS = [
     },
   },
   {
-    id: 'banana', name: '香蕉', emoji: '🍌', season: '全年',
+    id: 'banana', name: '香蕉／芭蕉', emoji: '🍌', season: '全年',
     cue: '彎長條，黃色成串',
-    names: ['a banana', 'a bunch of bananas', 'ripe yellow bananas'],
+    names: ['a banana', 'a bunch of bananas', 'ripe yellow bananas', 'short stubby plantains with angular ridges'],
     tips: {
       look: ['果皮金黃、出現少許褐色小斑點（芝麻斑）時最香甜', '果柄青綠堅實'],
+      other: ['芭蕉比香蕉短胖、稜角明顯，果皮帶些黑斑時最香甜'],
       avoid: ['果柄發黑或斷裂、果皮大片撞傷'],
       store: ['吊起來放常溫；冷藏會讓果皮變黑'],
     },
@@ -568,6 +569,16 @@ export const FRUITS = [
       store: ['生花生冷藏，盡快煮'],
     },
   },
+  {
+    id: 'lotus_seeds', name: '蓮子', emoji: '⚪', season: '6–8 月（新鮮）',
+    cue: '圓形乳白小顆粒',
+    names: ['lotus seeds', 'fresh lotus seeds', 'white dried lotus seeds'],
+    tips: {
+      look: ['新鮮蓮子選顆粒飽滿、白淨', '乾蓮子選顏色自然的乳白色；過白可能漂白過'],
+      avoid: ['有異味、發霉、蟲蛀'],
+      store: ['新鮮的冷藏並盡快吃；乾的密封放陰涼處'],
+    },
+  },
 ];
 
 export const VEGETABLES = [
@@ -736,11 +747,11 @@ export const VEGETABLES = [
     },
   },
   {
-    id: 'onion', name: '洋蔥', emoji: '🧅', season: '2–5 月',
-    cue: '圓形，褐色薄皮',
-    names: ['an onion', 'yellow onions', 'a brown onion'],
+    id: 'onion', name: '洋蔥（含紫洋蔥）', emoji: '🧅', season: '2–5 月',
+    cue: '圓形，褐色或紫紅色薄皮',
+    names: ['an onion', 'yellow onions', 'a brown onion', 'a red onion'],
     tips: {
-      look: ['外皮乾燥有光澤、完整', '頂端乾燥緊實'],
+      look: ['外皮乾燥有光澤、完整（紫洋蔥選紫紅色均勻的）', '頂端乾燥緊實'],
       touch: ['整顆硬實，頂端不軟'],
       avoid: ['發芽、頂端軟爛或發霉'],
       store: ['放通風陰涼處，和馬鈴薯分開放'],
@@ -1295,6 +1306,39 @@ export const VEGETABLES = [
       look: ['蒜白粗而潔白、葉片翠綠挺直'],
       avoid: ['葉尖枯黃、蒜白變軟'],
       store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'bottle_gourd', name: '瓠瓜（蒲仔）', emoji: '🍐', season: '5–9 月',
+    cue: '淡綠長筒或葫蘆形，表皮細絨毛',
+    names: ['a bottle gourd', 'a long pale green calabash gourd', 'opo squash'],
+    tips: {
+      look: ['表皮淡綠、細絨毛完整、有光澤', '形狀勻稱、粗細一致'],
+      touch: ['拿起來沉；指甲輕壓能留下痕跡代表嫩'],
+      avoid: ['表皮變硬變黃（老了）、有碰傷'],
+      store: ['冷藏'],
+    },
+  },
+  {
+    id: 'lions_mane', name: '猴頭菇', emoji: '🍄', season: '全年',
+    cue: '白色毛茸茸的球狀菇',
+    names: ["lion's mane mushroom", 'Hericium erinaceus', 'a white shaggy mushroom'],
+    tips: {
+      look: ['菇體潔白到乳黃、毛刺細密完整'],
+      touch: ['有彈性、不黏'],
+      avoid: ['變黃褐、出水'],
+      store: ['用紙包好冷藏'],
+    },
+  },
+  {
+    id: 'crown_daisy', name: '茼蒿', emoji: '🌿', season: '11–3 月',
+    cue: '羽狀深裂的綠葉',
+    names: ['crown daisy greens', 'garland chrysanthemum leaves', 'shungiku'],
+    tips: {
+      look: ['葉片翠綠鮮嫩、莖不粗'],
+      smell: ['有特殊香氣'],
+      avoid: ['葉片發黃、莖老硬'],
+      store: ['用紙包好冷藏，1–2 天內吃完'],
     },
   },
 ];

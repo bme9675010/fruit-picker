@@ -60,6 +60,12 @@ const EXTRA_QUERIES = {
   maitake: ['Grifola frondosa', 'maitake'], red_amaranth: ['Amaranthus tricolor', 'red amaranth'],
   sweet_potato_leaves: ['Ipomoea batatas leaves', 'sweet potato leaves'], gai_lan: ['Brassica oleracea alboglabra', 'kai lan'],
   pea_shoots: ['pea shoots', 'pea tendrils'], leek: ['leek', 'Allium ampeloprasum'],
+  nectarine: ['nectarine', 'Prunus persica nucipersica'], plantain: ['pisang awak', 'Musa ABB', 'plantain bananas'],
+  lotus_seeds: ['Nelumbo nucifera seeds', 'lotus seed'], bottle_gourd: ['Lagenaria siceraria fruit', 'calabash vegetable'],
+  big_cucumber: ['slicing cucumber', 'large cucumber'], green_peas: ['Pisum sativum seeds', 'garden peas'],
+  lions_mane: ['Hericium erinaceus', "lion's mane mushroom"], yellow_chives: ['blanched chives', 'jiu huang'],
+  red_onion: ['red onion', 'Allium cepa red'], crown_daisy: ['Glebionis coronaria', 'shungiku'],
+  xiao_bai_cai: ['Brassica rapa chinensis', 'xiao bai cai'],
 };
 const exists = (p) => access(p).then(() => true, () => false);
 const indexFile = new URL('index.json', dir);

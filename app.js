@@ -28,8 +28,10 @@ const ASK_MARGIN = 0.3;      // 前兩名差距小於這個值、且第二名夠
 const ASK_MIN2 = 0.1;
 const SURE_AT = 0.6;         // 目前顯示的蔬果高於這個值就不再詢問
 const LOGIT_SCALE = 100;
-// 使用者教過的畫面（手動選水果時記下的影像特徵），用 Tip-Adapter 的方式加分
-const PROTO_KEY = 'fruit-protos-v1';
+// 使用者教過的畫面（手動選水果時記下的影像特徵），用 Tip-Adapter 的方式加分。
+// 不同模型的特徵不能混用，所以依模型分開存（key 後面接模型名稱）。
+const PROTO_KEY = 'fruit-protos:';
+const OLD_PROTO_KEY = 'fruit-protos-v1'; // 舊版不分模型的資料，已無法使用
 const PROTO_MAX = 15;        // 每種水果最多記幾張
 const PROTO_ALPHA = 10;
 const PROTO_BETA = 5.5;
@@ -56,7 +58,7 @@ let ema = null;
 let loopTimer = null;
 let busy = false;
 let lastEmbedding = null;   // 最近一次辨識的影像特徵，手動選水果時用來「教」它
-let protos = loadProtos();
+let protos = {};             // 模型載入後才讀取（見 loadModel）
 let photoRequest = 0;       // 照片模式的請求編號，用來丟掉過期的結果
 let stableTicks = 0;
 let errorTicks = 0;
@@ -75,7 +77,8 @@ function session(key, value) {
 
 function loadProtos() {
   try {
-    return JSON.parse(localStorage.getItem(PROTO_KEY)) ?? {};
+    localStorage.removeItem(OLD_PROTO_KEY);
+    return JSON.parse(localStorage.getItem(PROTO_KEY + modelId)) ?? {};
   } catch {
     return {};
   }
@@ -83,7 +86,7 @@ function loadProtos() {
 
 function saveProtos() {
   try {
-    localStorage.setItem(PROTO_KEY, JSON.stringify(protos));
+    localStorage.setItem(PROTO_KEY + modelId, JSON.stringify(protos));
   } catch (err) {
     console.warn('無法儲存教過的資料', err);
   }
@@ -124,11 +127,18 @@ function loadModel() {
       }
     };
     modelId = data.model;
+    protos = loadProtos();
     processor = await AutoProcessor.from_pretrained(modelId);
     vision = await loadVision(modelId, progress_callback);
     els.loadBar.hidden = true;
     setStatus(readyLabel());
-  })();
+  })().catch((err) => {
+    // 下載失敗（多半是網路不穩）：清掉，讓下次可以重試
+    modelPromise = null;
+    els.loadBar.hidden = true;
+    setStatus('模型下載失敗');
+    throw Object.assign(new Error('辨識模型下載失敗，請確認網路連線後再試一次'), { cause: err, modelFailed: true });
+  });
   return modelPromise;
 }
 
@@ -177,6 +187,23 @@ function averageEmbeddings(a, b) {
   norm = Math.sqrt(norm);
   for (let i = 0; i < a.length; i++) v[i] /= norm;
   return v;
+}
+
+// 手機照片常有上千萬畫素，先縮小到長邊 PHOTO_MAX 再辨識，避免佔用大量記憶體
+const PHOTO_MAX = 1024;
+async function loadPhoto(url) {
+  const img = new Image();
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error('無法讀取這張照片'));
+    img.src = url;
+  });
+  const scale = Math.min(1, PHOTO_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.naturalWidth * scale);
+  canvas.height = Math.round(img.naturalHeight * scale);
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  return RawImage.fromCanvas(canvas);
 }
 
 function centerCrop(image, ratio = INNER_VIEW) {
@@ -272,9 +299,12 @@ async function tick() {
     if (image) {
       const before = shown;
       const probs = classify(await embed(image));
+      // 辨識進行中使用者已手動選擇、暫停或切到照片：丟掉這次結果，免得蓋掉畫面
+      if (pinned || paused || !els.still.hidden) return;
       ema = ema ? ema.map((p, i) => p * (1 - EMA) + probs[i] * EMA) : probs;
       render(ema, true);
       stableTicks = shown && shown === before ? stableTicks + 1 : 0;
+      if (errorTicks) setStatus(readyLabel()); // 從錯誤中恢復，狀態列改回來
       errorTicks = 0;
     }
   } catch (err) {
@@ -407,16 +437,30 @@ function renderChips(cands) {
   els.chips.replaceChildren(...chips);
 }
 
-function pin(id) {
+// 點候選或二選一：畫面就是這個蔬果，自動記住。
+// 從清單選（fromList）：可能只是想查挑法、鏡頭沒對準，所以改成讓使用者自己按「記住」。
+function pin(id, fromList = false) {
   pinned = id;
   shown = id;
   document.body.classList.add('found');
-  showFruit(id, learn(id) ? '手動選擇・已記住這個畫面，下次會更準' : '手動選擇');
+  const learnedMsg = '手動選擇・已記住這個畫面，下次會更準';
+  showFruit(id, !fromList && learn(id) ? learnedMsg : '手動選擇');
   const back = document.createElement('button');
   back.className = 'chip';
   back.textContent = '↺ 重新辨識';
   back.onclick = unpin;
-  els.chips.replaceChildren(back);
+  const chips = [back];
+  if (fromList && lastEmbedding) {
+    const remember = document.createElement('button');
+    remember.className = 'chip';
+    remember.textContent = `📌 記住這個畫面是${fruitById[id].name}`;
+    remember.onclick = () => {
+      if (learn(id)) showFruit(id, learnedMsg);
+      remember.remove();
+    };
+    chips.push(remember);
+  }
+  els.chips.replaceChildren(...chips);
   els.sheet.classList.remove('collapsed');
 }
 
@@ -479,7 +523,7 @@ async function analyzeFile(file) {
   try {
     await loadModel();
     if (req !== photoRequest) return;
-    const image = await RawImage.read(url);
+    const image = await loadPhoto(url);
     let v = await embed(image);
     if (MULTI_VIEW) v = averageEmbeddings(v, await embed(await centerCrop(image)));
     const probs = classify(v);
@@ -513,11 +557,16 @@ async function startLive(resumed = false) {
   } catch (err) {
     console.error(err);
     session(LIVE_KEY, null);
+    // 模型下載失敗時先關掉相機省電，按鈕可以重試
+    stream?.getTracks().forEach((t) => t.stop());
+    stream = null;
     els.startBtn.disabled = false;
-    els.introMsg.textContent = err.name === 'NotAllowedError'
-      ? (resumed ? '請按「開啟相機」繼續。' : '相機權限被拒絕了，請到瀏覽器設定允許相機，或改用「從相簿選照片」。')
-      : `無法開始：${err.message}`;
-    setStatus('未啟動');
+    els.introMsg.textContent = err.modelFailed
+      ? `${err.message}（按「開啟相機」重試）`
+      : err.name === 'NotAllowedError'
+        ? (resumed ? '請按「開啟相機」繼續。' : '相機權限被拒絕了，請到瀏覽器設定允許相機，或改用「從相簿選照片」。')
+        : `無法開始：${err.message}`;
+    if (!err.modelFailed) setStatus('未啟動');
   }
 }
 
@@ -547,25 +596,36 @@ els.grid.replaceChildren(...[['水果', FRUITS], ['蔬菜', VEGETABLES]].flatMap
 }));
 els.dialog.addEventListener('close', () => {
   const value = els.dialog.returnValue;
-  if (fruitById[value]) pin(value);
+  if (fruitById[value]) pin(value, true);
   if (value === 'reset' && confirm('要清除所有教過的畫面嗎？')) {
     protos = {};
-    saveProtos();
+    try {
+      Object.keys(localStorage).filter((k) => k.startsWith(PROTO_KEY)).forEach((k) => localStorage.removeItem(k));
+    } catch {}
   }
   els.dialog.returnValue = '';
 });
 
+// 「正常離開」的標記：重新整理、關閉分頁會觸發 pagehide；切到別的 App 會觸發 visibilitychange。
+// 在背景被系統回收是正常現象，不算當機；只有使用中突然被關掉（多半是記憶體不足）才沒有這個標記。
 document.addEventListener('visibilitychange', async () => {
-  if (document.hidden) return;
+  if (document.hidden) {
+    session(CLEAN_KEY, '1');
+    return;
+  }
+  session(CLEAN_KEY, null);
   await ensureCamera();
   scheduleLoop();
 });
-
-// 正常離開（重新整理、關閉分頁）會觸發 pagehide；被手機瀏覽器強制關掉則不會。
 addEventListener('pagehide', () => session(CLEAN_KEY, '1'));
 addEventListener('pageshow', () => session(CLEAN_KEY, null));
 
 setStatus('準備中');
+
+// 離線快取（見 sw.js；需要 https 或 localhost）
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch((err) => console.warn('離線快取無法啟用', err));
+}
 
 // 上次相機還開著就自動恢復；若是異常結束（多半是記憶體不足），改用較省資源的 CPU 模式
 if (session(LIVE_KEY)) {
