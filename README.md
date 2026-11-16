@@ -11,6 +11,8 @@
 | `embeddings-s1.json`、`refs-s1.bin` | 主模型（MobileCLIP-S1）的分類向量與參考樣本（約 4,400 張真實照片的影像特徵，int8 約 2.3MB） |
 | `embeddings.json`、`refs.bin` | 輕量備援模型（MobileCLIP-S0）的同類檔案，網頁曾被瀏覽器強制關掉時改用 |
 | `sw.js` | 離線快取（開過一次之後，沒網路也能用） |
+| `vendor/` | Transformers.js 與 ONNX Runtime 的 wasm（由 `tools/vendor.mjs` 複製，不依賴外部 CDN） |
+| `icon-*.png`、`apple-touch-icon.png` | 主畫面圖示（由 `tools/make-icons.py` 產生） |
 | `tools/` | 產生上述檔案的腳本（見下方「新增或修改蔬果」） |
 
 ## 本機預覽
@@ -19,7 +21,7 @@
 python tools/serve.py
 ```
 
-電腦開 http://localhost:5500 即可（這個伺服器關閉了快取，改完程式重新整理就會生效）。手機要開相機，網址必須是 **https**，所以要部署到 GitHub Pages、Cloudflare Pages、Vercel 或 Netlify 這類免費的靜態網站服務（把整個資料夾上傳即可，不需要 `tools/`）。
+電腦開 http://localhost:5500 即可（這個伺服器關閉了快取，改完程式重新整理就會生效）。網址加上 `?debug=1`（例如 `https://bme9675010.github.io/fruit-picker/?debug=1`）會在畫面上顯示模型、GPU／CPU、每次辨識的耗時與記憶體，點一下可以複製，方便回報手機上的狀況。手機要開相機，網址必須是 **https**，所以要部署到 GitHub Pages、Cloudflare Pages、Vercel 或 Netlify 這類免費的靜態網站服務（把整個資料夾上傳即可，不需要 `tools/`）。
 
 ## 新增或修改蔬果
 
@@ -33,13 +35,14 @@ python tools/serve.py
    node embed-photos.mjs && MODEL=s1 node embed-photos.mjs           # 照片的影像特徵（原圖＋中央裁切）
    MODEL=s1 node train.mjs --write                                   # 主模型：原有品項比線上版本準才寫入
    node train.mjs --quick --write --force                            # 輕量備援模型：跟主模型同一份品項
+   node vendor.mjs                                                   # 更新 Transformers.js 版本後才需要：重新複製程式庫與模型
    ```
 
    `train.mjs` 會印出每個新品項在測試集的準確度，以及它從原有品項「搶走」了幾張原本認對的照片。準確度太低（約 55% 以下）的建議從 `fruits.js` 拿掉；跟現有品項挑法相近又常互搶的（例如紫洋蔥和洋蔥），可以在 `tools/photo-rules.mjs` 的 `MERGED` 合併。
 
 ## 備註
 
-- 主模型是 MobileCLIP-S1（fp16 約 43MB）。輕量版 S0 約 23MB。第一次開啟時下載，之後由瀏覽器快取。兩者的 q8／uint8 量化版本辨識結果都不可靠，所以用 fp16。
+- 主模型是 MobileCLIP-S1（fp16 約 43MB）。輕量版 S0 約 23MB。第一次開啟時從 Hugging Face 下載，之後由瀏覽器快取；程式庫與 ONNX Runtime 則從本網站的 `vendor/` 載入，由 `sw.js` 快取。兩者的 q8／uint8 量化版本辨識結果都不可靠，所以用 fp16。
 - 認錯時點候選或二選一，App 會把當下畫面記在這支手機的 localStorage（依模型分開存），之後遇到類似畫面會更準。從「手動選蔬果」清單選的話，要再按「記住這個畫面」才會記。
 - 準確度：維基共享資源約 9,600 張照片，依檔名固定分成訓練 50%／驗證 20%／測試 30%；訓練時另加每張照片的中央 70% 裁切（模擬 App 對準框）。哪些照片有效、怎麼分組一律由 S0 判斷，所以不同模型是在同一批照片上比較。
   - 原有 107 種（1,636 張測試照片）：前一版（S0）75.1% → 目前（S1）**79.0%**，多角度辨識 **79.5%**；正確答案在前兩名 86.7% → **88.6%**。
@@ -52,5 +55,14 @@ python tools/serve.py
 - 比較容易混淆的組合：檸檬和金桔；藍莓、黑莓和桑椹；蜜棗和青梅；大白菜、青江菜和萵苣；苦瓜和絲瓜；地瓜和馬鈴薯；芋頭和山藥；大番茄和小番茄。香蕉、芒果、鳳梨、青花菜、茄子、洋蔥這類很穩定。
 - 測試後沒有加入：菠菜（7/15）、韭菜（6/12，還會讓青蔥被認錯）、芥藍（2/12）、豌豆苗（1/4）、大黃瓜（2/10）、小白菜（3/9）、油桃（7/14）、豌豆仁（4/8）、韭黃（沒有可用的測試照片）。
 - 評估過但沒採用的做法：易混淆組合的專門判別器（測試集反而變差）。
-- 手機瀏覽器可能因記憶體不足或切到背景而關掉網頁。App 會自動重新開啟相機；只有在使用中被強制關掉（不是切到背景）才會改用輕量模型與 CPU 模式（狀態列顯示「辨識中・輕量」）。辨識結果穩定後也會自動降低辨識頻率，減少發熱。
+- 手機瀏覽器可能因記憶體不足或切到背景而關掉網頁。App 會自動重新開啟相機；只有在使用中被強制關掉（不是切到背景）才會改用輕量模型與 CPU 模式（狀態列顯示「辨識中・輕量 ⇄」，點一下可以改回完整模式）。辨識結果穩定後也會自動降低辨識頻率，減少發熱。
 - 模型下載失敗時可以按「開啟相機」重試；照片模式會先把照片縮小到長邊 1024 像素再辨識，避免佔用大量記憶體。
+- 「手動選蔬果」清單可以搜尋；清單裡沒有的，搜尋結果會提供「上網查怎麼挑」。
+
+## 授權與資料來源
+
+- 本專案的程式碼以 [MIT License](LICENSE) 授權。
+- `vendor/transformers-*.min.js`：[Transformers.js](https://github.com/huggingface/transformers.js)，Apache License 2.0。
+- `vendor/ort-*/`：[ONNX Runtime Web](https://github.com/microsoft/onnxruntime)，MIT License。
+- 模型：[MobileCLIP](https://github.com/apple/ml-mobileclip)（Apple）的 ONNX 版本，執行時從 Hugging Face 的 [Xenova/mobileclip_s0](https://huggingface.co/Xenova/mobileclip_s0)、[Xenova/mobileclip_s1](https://huggingface.co/Xenova/mobileclip_s1) 下載，本 repo 不包含模型檔。**注意：MobileCLIP 的權重採用 [Apple Machine Learning Research Model License](https://github.com/apple/ml-mobileclip/blob/main/LICENSE_MODELS)，只允許非商業的研究用途，並排除用於產品或服務。** `embeddings*.json`、`refs*.bin` 是用這個模型算出的資料，同樣適用這些條款。
+- 參考樣本與訓練用照片來自 [維基共享資源](https://commons.wikimedia.org/)，各照片依其原本的授權（多為 CC BY／CC BY-SA 或公有領域）。本 repo 只包含由照片算出的影像特徵（`refs*.bin`），不包含照片本身；照片清單可用 `tools/collect-photos.mjs` 重新產生（`tools/photos/index.json`，含每張照片在維基共享資源的檔名）。

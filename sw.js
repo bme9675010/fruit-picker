@@ -1,11 +1,14 @@
 // 離線快取：開過一次之後，市場裡訊號差或沒網路也能用。
 // - 網頁本體與辨識資料：先試網路（拿到最新版），連不上或太慢就用快取
-// - CDN 上固定版本的程式庫（Transformers.js、ONNX Runtime）：一律優先用快取
-// - 模型檔由 Transformers.js 自己快取，這裡不處理
-const CACHE = 'fruit-picker-v1';
+// - vendor/（程式庫、ONNX Runtime）與 models/（模型）：檔名或路徑含版本，內容不會變，一律優先用快取
+// 主模型的資料先預存；輕量模型的資料也預存，離線時被降級成輕量模式才不會失敗。
+// 模型與 wasm 很大（數十 MB），不預存，第一次用到時才存。
+const CACHE = 'fruit-picker-v2';
 const SHELL = [
-  './', 'index.html', 'app.js', 'fruits.js', 'style.css', 'manifest.webmanifest', 'icon.svg',
-  'embeddings-s1.json', 'refs-s1.bin',
+  './', 'index.html', 'app.js', 'fruits.js', 'style.css', 'manifest.webmanifest',
+  'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png',
+  'vendor/transformers-4.3.1.min.js',
+  'embeddings-s1.json', 'refs-s1.bin', 'embeddings.json', 'refs.bin',
 ];
 const NETWORK_TIMEOUT_MS = 4000; // 有快取時，網路超過這個時間就先用快取
 
@@ -25,12 +28,10 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin === location.origin) {
-    if (url.pathname.includes('/tools/')) return; // 本機開發用的訓練資料，不快取
-    event.respondWith(networkFirst(req));
-  } else if (url.hostname === 'cdn.jsdelivr.net') {
-    event.respondWith(cacheFirst(req));
-  }
+  if (url.origin !== location.origin) return;
+  if (url.pathname.includes('/tools/')) return; // 本機開發用的訓練資料，不快取
+  if (url.pathname.includes('/vendor/') || url.pathname.includes('/models/')) event.respondWith(cacheFirst(req));
+  else event.respondWith(networkFirst(req));
 });
 
 async function networkFirst(req) {
@@ -47,7 +48,7 @@ async function networkFirst(req) {
 
 async function cacheFirst(req) {
   const cache = await caches.open(CACHE);
-  const hit = await cache.match(req);
+  const hit = await cache.match(req, { ignoreSearch: true });
   if (hit) return hit;
   const res = await fetch(req);
   if (res.ok) cache.put(req, res.clone());

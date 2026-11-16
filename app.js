@@ -3,10 +3,28 @@ import {
   AutoProcessor,
   CLIPVisionModelWithProjection,
   RawImage,
-} from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/dist/transformers.min.js';
+} from './vendor/transformers-4.3.1.min.js';
 import { FRUITS, VEGETABLES, TIP_LABELS } from './fruits.js';
 
+// 程式庫與 ONNX Runtime 放在這個網站裡（vendor/，見 tools/vendor.mjs），不依賴 jsDelivr；
+// wasm 的快取交給 sw.js，避免同一個檔案在瀏覽器裡存兩份。
+// 模型仍從 Hugging Face 下載並由 Transformers.js 快取：MobileCLIP 的權重授權只限研究用途，
+// 不在這個 repo 裡再散布（詳見 README「授權與資料來源」）。
 env.allowLocalModels = false;
+env.useWasmCache = false;
+{
+  // 與 Transformers.js 相同的判斷：Safari 26 以下又沒有 WebGPU 時，用一般版本的 wasm
+  const ua = navigator.userAgent;
+  const safari = (navigator.vendor || '').includes('Apple') && !/CriOS|FxiOS|EdgiOS|OPiOS|mercury|brave/i.test(ua)
+    && !ua.includes('Chrome') && !ua.includes('Android');
+  const oldSafari = safari && Number(ua.match(/Version\/(\d+)/)?.[1] ?? 26) < 26;
+  const variant = oldSafari && !('gpu' in navigator) ? '' : '.asyncify';
+  const dir = new URL(`vendor/ort-${env.backends.onnx.versions.web}/`, location.href).href;
+  env.backends.onnx.wasm.wasmPaths = {
+    mjs: `${dir}ort-wasm-simd-threaded${variant}.mjs`,
+    wasm: `${dir}ort-wasm-simd-threaded${variant}.wasm`,
+  };
+}
 
 const FAST_MS = 300;         // 還在找蔬果時，兩次辨識之間的間隔
 const SLOW_MS = 1200;        // 結果穩定後放慢，減少手機發熱與耗電
@@ -20,7 +38,7 @@ const CPU_KEY = 'fp-cpu';
 const LITE_KEY = 'fp-lite';
 // 預設用較準的 MobileCLIP-S1；網頁曾被強制關掉（多半是記憶體不足）就改用較小的 S0
 const MODEL_FILE = { main: 'embeddings-s1.json', lite: 'embeddings.json' };
-const readyLabel = () => (session(LITE_KEY) ? '辨識中・輕量' : '辨識中');
+const readyLabel = () => (session(LITE_KEY) ? '辨識中・輕量 ⇄' : '辨識中');
 const EMA = 0.45;            // 新結果的權重，越小畫面越穩定
 const SHOW_AT = 0.45;        // 機率超過這個值才顯示為辨識結果
 const DROP_AT = 0.25;        // 目前顯示的水果低於這個值才換掉
@@ -46,6 +64,39 @@ const els = {
   listBtn: $('listBtn'), dialog: $('listDialog'), grid: $('fruitGrid'),
 };
 const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES].map((f) => [f.id, f]));
+
+// ---------- 除錯資訊（網址加上 ?debug=1）：手機實測時截圖或點一下複製回報 ----------
+const DEBUG = new URLSearchParams(location.search).has('debug');
+const dbg = { embed: [], classify: [], tick: [], lastTick: 0, error: '' };
+const pushStat = (list, ms) => { list.push(ms); if (list.length > 20) list.shift(); };
+const avgMs = (list) => (list.length ? Math.round(list.reduce((a, b) => a + b, 0) / list.length) : '-');
+let debugEl = null;
+function renderDebug() {
+  if (!debugEl) {
+    debugEl = document.createElement('pre');
+    debugEl.id = 'debug';
+    debugEl.title = '點一下複製';
+    debugEl.onclick = () => navigator.clipboard?.writeText(debugEl.textContent).then(() => setStatus('除錯資訊已複製'));
+    document.body.append(debugEl);
+  }
+  const heap = performance.memory ? `${Math.round(performance.memory.usedJSHeapSize / 1e6)}MB` : '-';
+  const taught = Object.values(protos).reduce((n, list) => n + list.length, 0);
+  debugEl.textContent = [
+    `模型 ${modelId ?? '-'}（${device ?? '-'}${session(LITE_KEY) ? '・輕量' : ''}${session(CPU_KEY) ? '・CPU' : ''}）`,
+    `辨識 ${avgMs(dbg.embed)}ms／分類 ${avgMs(dbg.classify)}ms／每輪 ${avgMs(dbg.tick)}ms`,
+    `參考樣本 ${refVecs.length}／教過 ${taught} 張`,
+    `相機 ${els.video.videoWidth}×${els.video.videoHeight}／螢幕 ${innerWidth}×${innerHeight}@${+devicePixelRatio.toFixed(2)}`,
+    `裝置記憶體 ${navigator.deviceMemory ?? '-'}GB／JS ${heap}／離線快取 ${navigator.serviceWorker?.controller ? '啟用' : '未啟用'}`,
+    `網頁版本 ${document.lastModified}`,
+    navigator.userAgent.replace(/^Mozilla\/5\.0 /, ''),
+    dbg.error && `最近錯誤：${dbg.error}`,
+  ].filter(Boolean).join('\n');
+}
+if (DEBUG) {
+  setInterval(renderDebug, 1000);
+  addEventListener('error', (e) => { dbg.error = e.message; });
+  addEventListener('unhandledrejection', (e) => { dbg.error = String(e.reason?.message ?? e.reason); });
+}
 
 let processor, vision, classes, textMatrix, modelId;
 // 內建參考樣本（真實照片的影像特徵，見 tools/train.mjs）
@@ -75,10 +126,29 @@ function session(key, value) {
   }
 }
 
+// 教過的畫面以 int8 + 縮放係數存成 base64（"縮放係數:資料"），比存小數陣列小約 5 倍
+function encodeVec(v) {
+  let max = 0;
+  for (const x of v) max = Math.max(max, Math.abs(x));
+  const scale = max / 127 || 1;
+  const bytes = new Uint8Array(Int8Array.from(v, (x) => Math.round(x / scale)).buffer);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return `${scale.toPrecision(6)}:${btoa(bin)}`;
+}
+
+function decodeVec(entry) {
+  if (Array.isArray(entry)) return Float32Array.from(entry); // 舊格式（小數陣列）
+  const [scale, b64] = entry.split(':');
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  return Float32Array.from(new Int8Array(bytes.buffer), (x) => x * Number(scale));
+}
+
 function loadProtos() {
   try {
     localStorage.removeItem(OLD_PROTO_KEY);
-    return JSON.parse(localStorage.getItem(PROTO_KEY + modelId)) ?? {};
+    const stored = JSON.parse(localStorage.getItem(PROTO_KEY + modelId)) ?? {};
+    return Object.fromEntries(Object.entries(stored).map(([id, list]) => [id, list.map(decodeVec)]));
   } catch {
     return {};
   }
@@ -86,7 +156,8 @@ function loadProtos() {
 
 function saveProtos() {
   try {
-    localStorage.setItem(PROTO_KEY + modelId, JSON.stringify(protos));
+    const stored = Object.fromEntries(Object.entries(protos).map(([id, list]) => [id, list.map(encodeVec)]));
+    localStorage.setItem(PROTO_KEY + modelId, JSON.stringify(stored));
   } catch (err) {
     console.warn('無法儲存教過的資料', err);
   }
@@ -95,7 +166,7 @@ function saveProtos() {
 function learn(id) {
   if (!lastEmbedding) return false;
   const list = (protos[id] ??= []);
-  list.push(Array.from(lastEmbedding, (x) => +x.toFixed(4)));
+  list.push(Float32Array.from(lastEmbedding));
   if (list.length > PROTO_MAX) list.shift();
   saveProtos();
   return true;
@@ -298,7 +369,15 @@ async function tick() {
     const image = grabReticle(MULTI_VIEW && frameNo++ % 2 ? INNER_VIEW : 1);
     if (image) {
       const before = shown;
-      const probs = classify(await embed(image));
+      const t0 = performance.now();
+      const v = await embed(image);
+      const t1 = performance.now();
+      const probs = classify(v);
+      const t2 = performance.now();
+      pushStat(dbg.embed, t1 - t0);
+      pushStat(dbg.classify, t2 - t1);
+      if (dbg.lastTick) pushStat(dbg.tick, t2 - dbg.lastTick);
+      dbg.lastTick = t2;
       // 辨識進行中使用者已手動選擇、暫停或切到照片：丟掉這次結果，免得蓋掉畫面
       if (pinned || paused || !els.still.hidden) return;
       ema = ema ? ema.map((p, i) => p * (1 - EMA) + probs[i] * EMA) : probs;
@@ -309,6 +388,7 @@ async function tick() {
     }
   } catch (err) {
     console.error(err);
+    dbg.error = err.message;
     setStatus('辨識發生錯誤');
     if (++errorTicks >= 3 && device === 'webgpu') {
       errorTicks = 0;
@@ -322,7 +402,10 @@ async function tick() {
 
 // ---------- 畫面 ----------
 
-function setStatus(text) { els.status.textContent = text; }
+function setStatus(text) {
+  els.status.textContent = text;
+  document.body.classList.toggle('lite', !!session(LITE_KEY));
+}
 
 function rankFruits(probs) {
   return classes
@@ -583,17 +666,62 @@ els.pauseBtn.onclick = () => {
 
 els.handle.onclick = () => els.sheet.classList.toggle('collapsed');
 
-els.listBtn.onclick = () => els.dialog.showModal();
+// 輕量模式時，點狀態列可以改回完整模式（重新載入網頁，相機會自動恢復）
+els.status.onclick = () => {
+  if (!session(LITE_KEY)) return;
+  if (!confirm('要改回完整模式嗎？辨識比較準，但比較耗手機資源。')) return;
+  session(LITE_KEY, null);
+  session(CPU_KEY, null);
+  location.reload();
+};
+
+els.listBtn.onclick = () => {
+  search.value = '';
+  filterList('');
+  els.dialog.showModal();
+};
 els.grid.replaceChildren(...[['水果', FRUITS], ['蔬菜', VEGETABLES]].flatMap(([title, items]) => {
   const h = document.createElement('h4');
   h.textContent = title;
   return [h, ...items.map((f) => {
     const b = document.createElement('button');
     b.value = f.id;
+    b.dataset.name = f.name;
     b.innerHTML = `<span>${f.emoji}</span>${f.name}`;
     return b;
   })];
 }));
+
+// 清單搜尋：名稱包含輸入的字就顯示；都找不到時提供「上網查怎麼挑」
+const search = $('fruitSearch');
+function filterList(term) {
+  const q = term.trim();
+  let shownCount = 0;
+  let heading = null, headingHasItems = false;
+  for (const el of els.grid.children) {
+    if (el.tagName === 'H4') {
+      if (heading) heading.hidden = !headingHasItems;
+      heading = el;
+      headingHasItems = false;
+      continue;
+    }
+    const match = !q || el.dataset.name.includes(q);
+    el.hidden = !match;
+    if (match) { shownCount++; headingHasItems = true; }
+  }
+  if (heading) heading.hidden = !headingHasItems;
+  $('searchEmpty').hidden = shownCount > 0;
+  $('searchTerm').textContent = q;
+  $('searchWeb').href = `https://www.google.com/search?q=${encodeURIComponent(`${q} 怎麼挑`)}`;
+}
+search.addEventListener('input', () => filterList(search.value));
+// 在搜尋框按 Enter：只剩一個結果就直接選它，不要送出表單
+search.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const visible = [...els.grid.querySelectorAll('button:not([hidden])')];
+  if (visible.length === 1) els.dialog.close(visible[0].value);
+});
 els.dialog.addEventListener('close', () => {
   const value = els.dialog.returnValue;
   if (fruitById[value]) pin(value, true);

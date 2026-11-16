@@ -55,6 +55,7 @@ body.found #reticle span { border-color: var(--accent); }
   font-size: 12px; padding: 5px 10px; border-radius: 999px;
   background: rgba(0,0,0,.45); border: 1px solid var(--line); color: var(--muted);
 }
+body.lite .pill { cursor: pointer; color: var(--accent); border-color: var(--accent); }
 
 /* 開始畫面 */
 .intro {
@@ -125,6 +126,15 @@ body.found #reticle span { border-color: var(--accent); }
 .tip-group li { font-size: 15px; line-height: 1.6; }
 .hint { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 10px 0 0; }
 
+/* 除錯資訊（?debug=1） */
+#debug {
+  position: absolute; top: calc(var(--safe-t) + 54px); left: 8px; right: 8px; z-index: 5;
+  margin: 0; padding: 8px 10px; border-radius: 10px;
+  background: rgba(0, 0, 0, .72); color: #9fe49f;
+  font: 11px/1.45 ui-monospace, Menlo, Consolas, monospace;
+  white-space: pre-wrap; word-break: break-all; max-height: 40vh; overflow: auto;
+}
+
 /* 易混淆時的二選一 */
 .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
 .choice {
@@ -154,6 +164,15 @@ dialog {
 dialog::backdrop { background: rgba(0,0,0,.6); }
 dialog h3 { margin: 0 0 6px; }
 dialog .hint { margin: 0 0 12px; font-size: 13px; }
+.search {
+  width: 100%; margin: 6px 0 10px; padding: 11px 14px;
+  font: inherit; font-size: 16px; color: var(--text);
+  background: rgba(255,255,255,.07); border: 1px solid var(--line); border-radius: 12px;
+}
+.search:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.search-empty { text-align: center; padding: 8px 0 4px; }
+.search-empty p { margin: 0 0 12px; color: var(--muted); }
+.search-empty .btn { text-decoration: none; }
 dialog .btn.reset { margin-top: 4px; border: 0; color: var(--muted); font-size: 14px; font-weight: 400; }
 dialog .btn { width: 100%; margin-top: 12px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
