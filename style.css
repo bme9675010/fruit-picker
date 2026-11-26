@@ -55,7 +55,10 @@ body.found #reticle span { border-color: var(--accent); }
   font-size: 12px; padding: 5px 10px; border-radius: 999px;
   background: rgba(0,0,0,.45); border: 1px solid var(--line); color: var(--muted);
 }
+button.pill { font: inherit; font-size: 12px; }
+button.pill:disabled { cursor: default; opacity: 1; color: var(--muted); }
 body.lite .pill { cursor: pointer; color: var(--accent); border-color: var(--accent); }
+.disclaimer { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.5; }
 
 /* 開始畫面 */
 .intro {
@@ -125,6 +128,21 @@ body.lite .pill { cursor: pointer; color: var(--accent); border-color: var(--acc
 .tip-group ul { margin: 0; padding-left: 20px; }
 .tip-group li { font-size: 15px; line-height: 1.6; }
 .hint { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 10px 0 0; }
+
+/* 外觀判斷 */
+.quality {
+  display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 10px 12px;
+  border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.05); font-size: 14px; line-height: 1.5;
+}
+.quality .q-icon { font-size: 20px; line-height: 1.2; }
+.quality b { display: block; font-size: 15px; }
+.quality small { color: var(--muted); font-size: 12px; }
+.quality.good { border-color: rgba(122,211,138,.5); }
+.quality.good b { color: var(--ok); }
+.quality.wait b, .quality.warn b { color: var(--accent); }
+.quality.warn { border-color: rgba(255,181,71,.5); }
+.quality.bad { border-color: rgba(255,143,107,.6); }
+.quality.bad b { color: var(--warn); }
 
 /* 除錯資訊（?debug=1） */
 #debug {

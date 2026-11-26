@@ -11,7 +11,7 @@
 //       --force                  不跟線上版本比較就寫入（輕量備援模型用）
 //       MODEL=s1 node train.mjs  改用較大的 s1 模型（輸出 ../embeddings-s1.json、../refs-s1.bin）
 // 哪些照片算有效、怎麼分組，一律用 s0 判斷，所以不同模型是在同一批測試照片上比較。
-import { readFile, writeFile, access } from 'node:fs/promises';
+import { readFile, readdir, writeFile, access } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { badTitle, MERGED } from './photo-rules.mjs';
 import { SFX } from './model.mjs';
@@ -87,6 +87,26 @@ const data = {
 };
 console.log(`照片：正樣本 train ${data.train.length} / val ${data.val.length} / test ${data.test.length}，`
   + `負樣本 ${neg.length}，丟棄（不相干）${dropped}`);
+
+// 使用者從 App 匯出的「教過的畫面」（tools/taught/*.json）：只加進訓練集，不影響驗證／測試
+const taughtDir = new URL('./taught/', import.meta.url);
+const decodeVec = (entry) => {
+  const [scale, b64] = entry.split(':');
+  const bytes = Buffer.from(b64, 'base64');
+  return Float32Array.from(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.length), (x) => x * Number(scale));
+};
+let taught = 0;
+for (const name of (await readdir(taughtDir).catch(() => [])).filter((n) => n.endsWith('.json'))) {
+  const file = JSON.parse(await readFile(new URL(name, taughtDir), 'utf8'));
+  if (file.app !== 'fruit-picker' || file.model !== text.model) continue; // 不同模型的特徵不能混用
+  for (const [rawId, list] of Object.entries(file.protos)) {
+    const id = MERGED[rawId] ?? rawId;
+    const y = ids.indexOf(id);
+    if (y < 0) continue;
+    for (const entry of list) { data.train.push({ id, y, v: decodeVec(entry), vc: null, title: `taught:${name}`, split: 'train' }); taught++; }
+  }
+}
+if (taught) console.log(`使用者教過的畫面：${taught} 個（已加進訓練集）`);
 
 // ---------- 評估：原圖、中央裁切，以及兩者特徵平均（多角度）都算 ----------
 const normalize = (v) => { const n = Math.hypot(...v); return v.map((x) => x / n); };

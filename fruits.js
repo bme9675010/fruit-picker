@@ -1366,3 +1366,60 @@ export const TIP_LABELS = {
   avoid: '⚠️ 避開',
   store: '🧊 保存',
 };
+
+// ---------- 外觀判斷：從畫面推測新鮮度、熟度（CLIP 文字比對，{} 換成品項的英文名稱） ----------
+// verdict：good＝可以買、wait＝再放幾天、warn＝要注意、bad＝不建議
+const ROTTEN = { key: 'rotten', label: '看起來有腐爛或發霉', verdict: 'bad', advice: '不建議購買', prompts: ['a rotten moldy {}', 'a spoiled, decaying {}'] };
+export const QUALITY = {
+  general: [
+    { key: 'fresh', label: '外觀新鮮', verdict: 'good', advice: '外觀沒看到明顯問題', prompts: ['a fresh {}', 'a fresh, unblemished {}'] },
+    { key: 'damaged', label: '可能有碰傷或斑點', verdict: 'warn', advice: '翻過來看看有沒有軟爛、凹陷或褐斑', prompts: ['a bruised {} with brown spots', 'a damaged {} with blemishes'] },
+    ROTTEN,
+  ],
+  leafy: [
+    { key: 'fresh', label: '外觀新鮮', verdict: 'good', advice: '葉片看起來挺而翠綠', prompts: ['fresh crisp green {}', 'fresh {}'] },
+    { key: 'damaged', label: '有點萎黃', verdict: 'warn', advice: '挑葉片挺、沒有黃葉的', prompts: ['wilted, yellowing {}', 'limp wilted {}'] },
+    { key: 'rotten', label: '看起來有腐爛', verdict: 'bad', advice: '不建議購買', prompts: ['rotting slimy {}', 'rotten decaying {}'] },
+  ],
+  // 會變色的蔬果另外判斷熟度（取代 general）
+  ripeness: {
+    banana: [
+      { key: 'unripe', label: '還沒熟（偏青）', verdict: 'wait', advice: '放常溫幾天，轉黃、出現小斑點再吃', prompts: ['green unripe {}', 'unripe green {}'] },
+      { key: 'ripe', label: '熟度剛好', verdict: 'good', advice: '現在吃正好', prompts: ['ripe yellow {} with a few brown spots', 'perfectly ripe yellow {}'] },
+      { key: 'overripe', label: '熟過頭了', verdict: 'warn', advice: '要馬上吃，或拿來做香蕉蛋糕、打果汁', prompts: ['overripe {} with a black peel', 'overripe brown {}'] },
+      ROTTEN,
+    ],
+    mango: [
+      { key: 'unripe', label: '還沒熟（偏青）', verdict: 'wait', advice: '放常溫催熟，聞到香氣、微軟再吃', prompts: ['green unripe {}', 'hard unripe green {}'] },
+      { key: 'ripe', label: '熟度剛好', verdict: 'good', advice: '現在吃正好', prompts: ['ripe red and yellow {}', 'perfectly ripe {}'] },
+      { key: 'overripe', label: '熟過頭了', verdict: 'warn', advice: '看看有沒有大片黑斑或流汁', prompts: ['overripe {} with dark spots', 'overripe wrinkled {}'] },
+      ROTTEN,
+    ],
+    papaya: [
+      { key: 'unripe', label: '還沒熟（偏青）', verdict: 'wait', advice: '放常溫，果皮轉黃超過一半再吃', prompts: ['green unripe {}', 'unripe green {}'] },
+      { key: 'ripe', label: '熟度剛好', verdict: 'good', advice: '現在吃正好', prompts: ['ripe yellow-orange {}', 'perfectly ripe yellow {}'] },
+      { key: 'overripe', label: '熟過頭了', verdict: 'warn', advice: '看看有沒有水漬狀黑斑或凹陷', prompts: ['overripe {} with dark sunken spots', 'overripe soft {}'] },
+      ROTTEN,
+    ],
+    tomato: [
+      { key: 'unripe', label: '還沒熟（偏青）', verdict: 'wait', advice: '放常溫幾天會轉紅', prompts: ['green unripe {}', 'unripe green {}'] },
+      { key: 'ripe', label: '熟度剛好', verdict: 'good', advice: '顏色紅潤，可以買', prompts: ['ripe red {}', 'fresh ripe red {}'] },
+      ROTTEN,
+    ],
+    cherry_tomato: [
+      { key: 'unripe', label: '還沒熟（偏青）', verdict: 'wait', advice: '放常溫幾天會轉紅', prompts: ['green unripe {}', 'unripe green {}'] },
+      { key: 'ripe', label: '熟度剛好', verdict: 'good', advice: '顏色紅亮，可以買', prompts: ['ripe red {}', 'fresh ripe red {}'] },
+      ROTTEN,
+    ],
+    strawberry: [
+      { key: 'unripe', label: '還沒熟（偏白綠）', verdict: 'warn', advice: '草莓採收後不會再變甜，挑整顆紅透的', prompts: ['unripe white and green {}', 'unripe pale {}'] },
+      { key: 'ripe', label: '熟度剛好', verdict: 'good', advice: '紅透有光澤，可以買', prompts: ['ripe bright red {}', 'fresh ripe red {}'] },
+      ROTTEN,
+    ],
+    pineapple: [
+      { key: 'unripe', label: '還沒熟（偏青）', verdict: 'warn', advice: '鳳梨採收後不會再變甜，挑底部轉黃的', prompts: ['green unripe {}', 'unripe green {}'] },
+      { key: 'ripe', label: '熟度剛好', verdict: 'good', advice: '果皮轉黃，可以買', prompts: ['ripe golden yellow {}', 'ripe {}'] },
+      ROTTEN,
+    ],
+  },
+};

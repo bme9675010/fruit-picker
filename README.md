@@ -10,6 +10,7 @@
 | `fruits.js` | 52 種水果、69 種蔬菜的挑選技巧與給 CLIP 比對的英文描述 |
 | `embeddings-s1.json`、`refs-s1.bin` | 主模型（MobileCLIP-S1）的分類向量與參考樣本（約 4,400 張真實照片的影像特徵，int8 約 2.3MB） |
 | `embeddings.json`、`refs.bin` | 輕量備援模型（MobileCLIP-S0）的同類檔案，網頁曾被瀏覽器強制關掉時改用 |
+| `quality-s1.json`、`quality.json` | 外觀判斷（新鮮／碰傷／腐爛、生／熟）用的文字特徵與校準值（由 `tools/build-quality.mjs` 產生） |
 | `sw.js` | 離線快取（開過一次之後，沒網路也能用） |
 | `vendor/` | Transformers.js 與 ONNX Runtime 的 wasm（由 `tools/vendor.mjs` 複製，不依賴外部 CDN） |
 | `icon-*.png`、`apple-touch-icon.png` | 主畫面圖示（由 `tools/make-icons.py` 產生） |
@@ -35,8 +36,12 @@ python tools/serve.py
    node embed-photos.mjs && MODEL=s1 node embed-photos.mjs           # 照片的影像特徵（原圖＋中央裁切）
    MODEL=s1 node train.mjs --write                                   # 主模型：原有品項比線上版本準才寫入
    node train.mjs --quick --write --force                            # 輕量備援模型：跟主模型同一份品項
-   node vendor.mjs                                                   # 更新 Transformers.js 版本後才需要：重新複製程式庫與模型
+   node build-quality.mjs && MODEL=s1 node build-quality.mjs         # 外觀判斷的文字特徵
+   node vendor.mjs                                                   # 更新 Transformers.js 版本後才需要：重新複製程式庫
+   npm test                                                          # 邏輯測試（搜尋、壓縮、離線快取、外觀判斷）
    ```
+
+   使用者從 App 匯出的「教過的畫面」（`fruit-picker-taught-*.json`）放進 `tools/taught/`，`train.mjs` 會自動加進訓練集（只限同一個模型匯出的檔案）。
 
    `train.mjs` 會印出每個新品項在測試集的準確度，以及它從原有品項「搶走」了幾張原本認對的照片。準確度太低（約 55% 以下）的建議從 `fruits.js` 拿掉；跟現有品項挑法相近又常互搶的（例如紫洋蔥和洋蔥），可以在 `tools/photo-rules.mjs` 的 `MERGED` 合併。
 
@@ -58,6 +63,11 @@ python tools/serve.py
 - 手機瀏覽器可能因記憶體不足或切到背景而關掉網頁。App 會自動重新開啟相機；只有在使用中被強制關掉（不是切到背景）才會改用輕量模型與 CPU 模式（狀態列顯示「辨識中・輕量 ⇄」，點一下可以改回完整模式）。辨識結果穩定後也會自動降低辨識頻率，減少發熱。
 - 模型下載失敗時可以按「開啟相機」重試；照片模式會先把照片縮小到長邊 1024 像素再辨識，避免佔用大量記憶體。
 - 「手動選蔬果」清單可以搜尋；清單裡沒有的，搜尋結果會提供「上網查怎麼挑」。
+- 外觀判斷：辨識出品項後，從畫面推測「新鮮／可能有碰傷／腐爛」（葉菜是「新鮮／萎黃／腐爛」），會變色的 7 種（香蕉、芒果、木瓜、大番茄、小番茄、草莓、鳳梨）另外判斷「還沒熟／剛好／熟過頭」。用 `tools/eval-quality.mjs` 以維基共享資源上標示狀態的照片實測並校準：
+  - 新鮮照片被誤判成碰傷／腐爛約 5%；真正腐爛的照片約有 45% 會被指出（偏保守，寧可不說也不亂說）；熟度在有顯示時約 70% 正確。
+  - 最高狀態的機率低於 60% 時不顯示。嚴重腐爛到認不出品項的，也不會有外觀判斷。
+  - 只看外觀，無法判斷甜度或內部狀況（例如西瓜甜不甜、裡面有沒有空心）。
+- 「手動選蔬果」清單最下方可以匯出教過的畫面（只有特徵數值、不含照片），提供給開發者改進辨識。
 
 ## 授權與資料來源
 

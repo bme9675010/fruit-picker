@@ -4,7 +4,7 @@ import {
   CLIPVisionModelWithProjection,
   RawImage,
 } from './vendor/transformers-4.3.1.min.js';
-import { FRUITS, VEGETABLES, TIP_LABELS } from './fruits.js';
+import { FRUITS, VEGETABLES, TIP_LABELS, QUALITY } from './fruits.js';
 
 // 程式庫與 ONNX Runtime 放在這個網站裡（vendor/，見 tools/vendor.mjs），不依賴 jsDelivr；
 // wasm 的快取交給 sw.js，避免同一個檔案在瀏覽器裡存兩份。
@@ -38,6 +38,9 @@ const CPU_KEY = 'fp-cpu';
 const LITE_KEY = 'fp-lite';
 // 預設用較準的 MobileCLIP-S1；網頁曾被強制關掉（多半是記憶體不足）就改用較小的 S0
 const MODEL_FILE = { main: 'embeddings-s1.json', lite: 'embeddings.json' };
+// 外觀判斷（新鮮／碰傷／腐爛、生／熟）的文字特徵，見 tools/build-quality.mjs
+const QUALITY_FILE = { main: 'quality-s1.json', lite: 'quality.json' };
+const Q_EMA = 0.35;          // 即時模式的外觀判斷平滑，比辨識更保守
 const readyLabel = () => (session(LITE_KEY) ? '辨識中・輕量 ⇄' : '辨識中');
 const EMA = 0.45;            // 新結果的權重，越小畫面越穩定
 const SHOW_AT = 0.45;        // 機率超過這個值才顯示為辨識結果
@@ -60,7 +63,7 @@ const els = {
   status: $('status'), intro: $('intro'), startBtn: $('startBtn'), introMsg: $('introMsg'),
   loadBar: $('loadBar'), sheet: $('sheet'), handle: $('sheetHandle'),
   emoji: $('fruitEmoji'), name: $('fruitName'), meta: $('fruitMeta'),
-  chips: $('candidates'), tips: $('tips'), pauseBtn: $('pauseBtn'),
+  chips: $('candidates'), tips: $('tips'), pauseBtn: $('pauseBtn'), quality: $('quality'),
   listBtn: $('listBtn'), dialog: $('listDialog'), grid: $('fruitGrid'),
 };
 const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES].map((f) => [f.id, f]));
@@ -190,6 +193,11 @@ function loadModel() {
       refAlpha = alpha;
       refBeta = beta;
     }
+    // 外觀判斷的資料載入失敗不影響辨識
+    qualityData = await fetch(session(LITE_KEY) ? QUALITY_FILE.lite : QUALITY_FILE.main)
+      .then((r) => r.json())
+      .then((q) => ({ ...q, items: Object.fromEntries(Object.entries(q.items).map(([id, it]) => [id, { kind: it.kind, states: it.states.map((s) => ({ key: s.key, v: decodeVec(s.v) })) }])) }))
+      .catch((err) => { console.warn('外觀判斷資料載入失敗', err); return null; });
 
     const progress_callback = (p) => {
       if (p.status === 'progress' && p.file?.endsWith('.onnx')) {
@@ -382,6 +390,7 @@ async function tick() {
       if (pinned || paused || !els.still.hidden) return;
       ema = ema ? ema.map((p, i) => p * (1 - EMA) + probs[i] * EMA) : probs;
       render(ema, true);
+      if (shown && tipsFor === shown) updateQuality(shown, v, true); // 正在問二選一時不判斷
       stableTicks = shown && shown === before ? stableTicks + 1 : 0;
       if (errorTicks) setStatus(readyLabel()); // 從錯誤中恢復，狀態列改回來
       errorTicks = 0;
@@ -403,8 +412,12 @@ async function tick() {
 // ---------- 畫面 ----------
 
 function setStatus(text) {
+  const lite = !!session(LITE_KEY);
   els.status.textContent = text;
-  document.body.classList.toggle('lite', !!session(LITE_KEY));
+  document.body.classList.toggle('lite', lite);
+  // 只有輕量模式時狀態列才是可以按的按鈕（改回完整模式）
+  els.status.disabled = !lite;
+  els.status.setAttribute('aria-label', lite ? `${text}，按一下改回完整模式` : text);
 }
 
 function rankFruits(probs) {
@@ -444,7 +457,55 @@ function render(probs, live) {
 }
 
 let tipsFor = null;
+// ---------- 外觀判斷 ----------
+let qualityData = null;      // { bias, threshold, items: { id: { kind, states: [{ key, v }] } } }
+let qualitySmooth = null;    // 即時模式：{ id, probs }
+
+// 回傳該品項各外觀狀態的機率；「碰傷」「腐爛」先減掉校準值，避免把新鮮的誤判成壞掉
+function judgeQuality(id, v) {
+  const item = qualityData?.items[id];
+  if (!item || !v) return null;
+  const z = item.states.map((s) => {
+    let d = 0;
+    for (let i = 0; i < v.length; i++) d += s.v[i] * v[i];
+    return d * LOGIT_SCALE - (qualityData.bias[s.key] ?? 0);
+  });
+  const max = Math.max(...z);
+  const e = z.map((x) => Math.exp(x - max));
+  const sum = e.reduce((a, b) => a + b, 0);
+  return e.map((x) => x / sum);
+}
+
+function updateQuality(id, v, live) {
+  let probs = judgeQuality(id, v);
+  if (!probs) return hideQuality();
+  if (live && qualitySmooth?.id === id) probs = probs.map((p, i) => qualitySmooth.probs[i] * (1 - Q_EMA) + p * Q_EMA);
+  qualitySmooth = live ? { id, probs } : null;
+  const item = qualityData.items[id];
+  const best = probs.indexOf(Math.max(...probs));
+  // 不夠確定就不顯示，寧可不說也不要亂說
+  if (probs[best] < qualityData.threshold) return hideQuality();
+  const defs = item.kind === 'ripeness' ? QUALITY.ripeness[id] : QUALITY[item.kind];
+  const state = defs.find((s) => s.key === item.states[best].key);
+  const icon = { good: '👍', wait: '⏳', warn: '⚠️', bad: '🚫' }[state.verdict];
+  els.quality.className = `quality ${state.verdict}`;
+  els.quality.replaceChildren();
+  const iconEl = Object.assign(document.createElement('span'), { className: 'q-icon', textContent: icon });
+  const body = document.createElement('div');
+  const title = Object.assign(document.createElement('b'), { textContent: `外觀判斷：${state.label}` });
+  const advice = document.createTextNode(state.advice);
+  const note = Object.assign(document.createElement('small'), { textContent: '　（只看外觀推測，僅供參考）' });
+  body.append(title, advice, note);
+  els.quality.append(iconEl, body);
+  els.quality.hidden = false;
+}
+
+function hideQuality() {
+  els.quality.hidden = true;
+}
+
 function showChoice(a, b) {
+  hideQuality();
   const key = [a, b].sort().join('|');
   if (tipsFor === key) return;
   tipsFor = key;
@@ -495,11 +556,21 @@ function showFruit(id, metaHtml) {
         group.append(h, ul);
         return group;
       }),
+    disclaimer(),
   );
+}
+
+function disclaimer() {
+  const p = document.createElement('p');
+  p.className = 'disclaimer';
+  p.textContent = '挑選技巧依一般常識整理，僅供參考；辨識結果也可能出錯，請以實際觀察為準。';
+  return p;
 }
 
 function showSearching(live) {
   tipsFor = null;
+  hideQuality();
+  qualitySmooth = null;
   els.emoji.textContent = '🔍';
   els.name.textContent = live ? '把蔬果放進框框裡' : '認不太出來';
   els.meta.textContent = live ? '對準一種蔬果、光線充足會更準' : '可以點下方候選，或手動選蔬果';
@@ -528,6 +599,7 @@ function pin(id, fromList = false) {
   document.body.classList.add('found');
   const learnedMsg = '手動選擇・已記住這個畫面，下次會更準';
   showFruit(id, !fromList && learn(id) ? learnedMsg : '手動選擇');
+  updateQuality(id, lastEmbedding, false);
   const back = document.createElement('button');
   back.className = 'chip';
   back.textContent = '↺ 重新辨識';
@@ -612,6 +684,7 @@ async function analyzeFile(file) {
     const probs = classify(v);
     if (req !== photoRequest) return;
     render(probs, false);
+    if (shown && tipsFor === shown) updateQuality(shown, v, false);
     setStatus('照片模式');
   } catch (err) {
     if (req !== photoRequest) return;
@@ -733,6 +806,26 @@ els.dialog.addEventListener('close', () => {
   }
   els.dialog.returnValue = '';
 });
+
+// 匯出教過的畫面（只有影像特徵數值，不含照片），寄給開發者併入訓練、改進辨識（見 tools/train.mjs）
+$('exportBtn').onclick = () => {
+  const count = Object.values(protos).reduce((n, list) => n + list.length, 0);
+  if (!modelId || !count) {
+    alert('還沒有教過的畫面。辨識時點候選、二選一，或在清單選了之後按「記住這個畫面」，就會累積起來。');
+    return;
+  }
+  const data = {
+    app: 'fruit-picker', format: 1, model: modelId, exportedAt: new Date().toISOString(),
+    protos: Object.fromEntries(Object.entries(protos).map(([id, list]) => [id, list.map(encodeVec)])),
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: `fruit-picker-taught-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  setStatus(`已匯出 ${count} 個畫面`);
+};
 
 // 「正常離開」的標記：重新整理、關閉分頁會觸發 pagehide；切到別的 App 會觸發 visibilitychange。
 // 在背景被系統回收是正常現象，不算當機；只有使用中突然被關掉（多半是記憶體不足）才沒有這個標記。

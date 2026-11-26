@@ -20,7 +20,7 @@
 
     <header id="topbar">
       <div class="brand">🍑 挑水果</div>
-      <div id="status" class="pill">準備中</div>
+      <button id="status" class="pill" type="button" disabled>準備中</button>
     </header>
 
     <section id="intro" class="intro">
@@ -47,6 +47,7 @@
           <div id="fruitMeta" class="meta">辨識中…</div>
         </div>
       </div>
+      <div id="quality" class="quality" role="status" hidden></div>
       <div id="candidates" class="chips"></div>
       <div id="tips" class="tips"></div>
       <div class="actions">
@@ -70,6 +71,7 @@
           <a id="searchWeb" class="btn primary" target="_blank" rel="noopener">上網查怎麼挑</a>
         </div>
         <button class="btn ghost" value="close">關閉</button>
+        <button class="btn ghost reset" type="button" id="exportBtn">匯出教過的畫面（幫忙改進辨識）</button>
         <button class="btn ghost reset" value="reset">清除教過的畫面</button>
       </form>
     </dialog>

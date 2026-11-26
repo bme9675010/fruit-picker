@@ -3,12 +3,13 @@
 // - vendor/（程式庫、ONNX Runtime）與 models/（模型）：檔名或路徑含版本，內容不會變，一律優先用快取
 // 主模型的資料先預存；輕量模型的資料也預存，離線時被降級成輕量模式才不會失敗。
 // 模型與 wasm 很大（數十 MB），不預存，第一次用到時才存。
-const CACHE = 'fruit-picker-v2';
+const CACHE = 'fruit-picker-v3';
 const SHELL = [
   './', 'index.html', 'app.js', 'fruits.js', 'style.css', 'manifest.webmanifest',
   'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png',
   'vendor/transformers-4.3.1.min.js',
   'embeddings-s1.json', 'refs-s1.bin', 'embeddings.json', 'refs.bin',
+  'quality-s1.json', 'quality.json',
 ];
 const NETWORK_TIMEOUT_MS = 4000; // 有快取時，網路超過這個時間就先用快取
 
