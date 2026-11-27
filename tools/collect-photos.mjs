@@ -3,7 +3,7 @@
 // 用法：node collect-photos.mjs
 import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { FRUITS, VEGETABLES } from '../fruits.js';
+import { FRUITS, VEGETABLES, PROTEINS } from '../fruits.js';
 import { searchExclude } from './photo-rules.mjs';
 
 const UA = 'fruit-picker/0.1 (https://github.com/bme9675010/fruit-picker)';
@@ -66,6 +66,24 @@ const EXTRA_QUERIES = {
   lions_mane: ['Hericium erinaceus', "lion's mane mushroom"], yellow_chives: ['blanched chives', 'jiu huang'],
   red_onion: ['red onion', 'Allium cepa red'], crown_daisy: ['Glebionis coronaria', 'shungiku'],
   xiao_bai_cai: ['Brassica rapa chinensis', 'xiao bai cai'],
+  egg: ['chicken eggs', 'eggs in carton', 'brown eggs', 'egg tray'],
+  white_shrimp: ['Litopenaeus vannamei', 'Penaeus vannamei', 'shrimp seafood market', 'raw prawns'],
+  grass_shrimp: ['Penaeus monodon', 'tiger prawns', 'giant tiger prawn'],
+  clam: ['Meretrix lusoria', 'Meretrix', 'clams market', 'Ruditapes philippinarum'],
+  oyster: ['shucked oysters', 'oyster meat', 'oysters market', 'Crassostrea gigas'],
+  squid: ['Uroteuthis', 'Loligo', 'squid fish market', 'raw squid'],
+  cuttlefish: ['Sepia pharaonis', 'Sepia officinalis', 'cuttlefish market', 'cuttlefish'],
+  salmon: ['salmon fillet', 'salmon steak', 'salmon fish market', 'salmon meat'],
+  milkfish: ['Chanos chanos', 'bangus fish', 'milkfish market', 'milkfish'],
+  tilapia: ['tilapia fish market', 'Oreochromis niloticus', 'tilapia fish', 'red tilapia'],
+  saury: ['Cololabis saira', 'sanma', 'saury fish market', 'saury'],
+  pork_belly: ['pork belly', 'samgyeopsal', 'pork belly meat', 'streaky pork'],
+  pork_loin: ['pork loin', 'pork chop', 'pork tenderloin', 'pork meat'],
+  ground_pork: ['minced meat', 'ground meat', 'minced pork', 'ground beef'],
+  beef: ['raw beef', 'beef steak', 'beef cuts', 'wagyu beef', 'beef meat'],
+  chicken_thigh: ['chicken legs', 'chicken drumsticks', 'chicken thighs', 'chicken leg quarters'],
+  chicken_breast: ['chicken breast', 'chicken fillet', 'chicken breast meat'],
+  whole_chicken: ['whole chicken', 'plucked chicken', 'poultry market', 'chicken carcass'],
 };
 const exists = (p) => access(p).then(() => true, () => false);
 const indexFile = new URL('index.json', dir);
@@ -95,7 +113,7 @@ async function worker() {
 const workers = [worker(), worker(), worker(), worker()];
 
 // 同時搜尋 3 種蔬果
-const todo = [...FRUITS.map((item) => [item, 'fruit']), ...VEGETABLES.map((item) => [item, 'vegetable'])]
+const todo = [...FRUITS.map((item) => [item, 'fruit']), ...VEGETABLES.map((item) => [item, 'vegetable']), ...PROTEINS.map((item) => [item, item.kind])]
   .filter(([item]) => !(index[item.id]?.length >= ENOUGH));
 async function searcher() {
   for (let next = todo.shift(); next; next = todo.shift()) {

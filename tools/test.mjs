@@ -37,9 +37,9 @@ check('沒校準時偏向腐爛、校準後改判新鮮', raw[1] > raw[0] && cal
 check('不認識的品項不判斷', makeJudge({})('nope', img) === null);
 
 // ---- 2. 清單搜尋 ----
-const { FRUITS, VEGETABLES } = await import(new URL('../fruits.js', import.meta.url));
+const { FRUITS, VEGETABLES, PROTEINS, GROUPS } = await import(new URL('../fruits.js', import.meta.url));
 const mk = (tagName, extra = {}) => ({ tagName, hidden: false, dataset: {}, textContent: '', ...extra });
-const children = [['水果', FRUITS], ['蔬菜', VEGETABLES]].flatMap(([t, items]) => [mk('H4', { textContent: t }), ...items.map((f) => mk('BUTTON', { value: f.id, dataset: { name: f.name } }))]);
+const children = [['水果', FRUITS], ['蔬菜', VEGETABLES], ['魚、海鮮、肉、蛋', PROTEINS]].flatMap(([t, items]) => [mk('H4', { textContent: t }), ...items.map((f) => mk('BUTTON', { value: f.id, dataset: { name: f.name } }))]);
 const nodes = { searchEmpty: mk('DIV'), searchTerm: mk('B'), searchWeb: mk('A', { href: '' }) };
 const filterList = new Function('els', '$', `${grab('filterList')}\nreturn filterList;`)({ grid: { children } }, (id) => nodes[id]);
 const visible = () => children.filter((c) => c.tagName === 'BUTTON' && !c.hidden).map((c) => c.dataset.name);
@@ -48,11 +48,18 @@ filterList('芭');
 check('搜尋「芭」', visible().join() === '芭樂,香蕉／芭蕉' && heads().join() === '水果', `${visible().join('、')}｜${heads().join('、')}`);
 filterList('菇');
 check('搜尋「菇」只顯示蔬菜分類', heads().join() === '蔬菜' && visible().length >= 6, visible().join('、'));
+filterList('蝦');
+check('搜尋「蝦」只顯示生鮮分類', heads().join() === '魚、海鮮、肉、蛋' && visible().join() === '白蝦,草蝦／明蝦', visible().join('、'));
 filterList('羽衣甘藍');
 check('找不到時顯示「上網查」', !nodes.searchEmpty.hidden && visible().length === 0 && heads().length === 0);
 check('上網查的連結', nodes.searchWeb.href === 'https://www.google.com/search?q=' + encodeURIComponent('羽衣甘藍 怎麼挑'), decodeURIComponent(nodes.searchWeb.href));
 filterList('');
-check('清空搜尋恢復全部', visible().length === FRUITS.length + VEGETABLES.length && nodes.searchEmpty.hidden, `${visible().length} 種`);
+check('清空搜尋恢復全部', visible().length === FRUITS.length + VEGETABLES.length + PROTEINS.length && nodes.searchEmpty.hidden, `${visible().length} 種`);
+
+// ---- 2b. 生鮮資料完整 ----
+const allIds = [...FRUITS, ...VEGETABLES, ...PROTEINS].map((f) => f.id);
+check('品項 id 不重複', new Set(allIds).size === allIds.length);
+check('每個生鮮品項都有大類、檢查清單與外觀重點', PROTEINS.every((f) => GROUPS[f.group] && f.checklist?.length && f.cue && f.kind));
 
 // ---- 3. Service worker：路由與離線 ----
 const sw = await readFile(root + 'sw.js', 'utf8');

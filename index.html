@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#14110f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>挑水果</title>
+  <title>挑食材</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -19,14 +19,14 @@
     <div id="reticle" aria-hidden="true"><span></span></div>
 
     <header id="topbar">
-      <div class="brand">🍑 挑水果</div>
+      <div class="brand">🍑 挑食材</div>
       <button id="status" class="pill" type="button" disabled>準備中</button>
     </header>
 
     <section id="intro" class="intro">
       <div class="intro-card">
         <div class="intro-emoji">🥭🍉🥦🥕</div>
-        <h1>拿鏡頭對準蔬果<br>告訴你怎麼挑</h1>
+        <h1>拿鏡頭對準蔬果魚肉<br>告訴你怎麼挑</h1>
         <p>辨識全部在手機上進行，照片不會上傳。第一次使用需下載約 46MB 的辨識模型（建議連 Wi-Fi），之後就會記住。</p>
         <button id="startBtn" class="btn primary">開啟相機</button>
         <label class="btn ghost">
@@ -43,7 +43,7 @@
       <div class="sheet-head">
         <div id="fruitEmoji" class="fruit-emoji">🔍</div>
         <div class="fruit-title">
-          <h2 id="fruitName">把蔬果放進框框裡</h2>
+          <h2 id="fruitName">把食材放進框框裡</h2>
           <div id="fruitMeta" class="meta">辨識中…</div>
         </div>
       </div>
@@ -52,7 +52,7 @@
       <div id="tips" class="tips"></div>
       <div class="actions">
         <button id="pauseBtn" class="btn small">⏸ 暫停</button>
-        <button id="listBtn" class="btn small">📋 手動選蔬果</button>
+        <button id="listBtn" class="btn small">📋 手動選擇</button>
         <label class="btn small">
           🖼 選照片
           <input id="fileInput2" type="file" accept="image/*" hidden>
@@ -62,8 +62,8 @@
 
     <dialog id="listDialog">
       <form method="dialog">
-        <h3>選擇蔬果</h3>
-        <input id="fruitSearch" class="search" type="search" placeholder="搜尋，例如：芭樂、菇" autocomplete="off" enterkeyhint="search">
+        <h3>選擇食材</h3>
+        <input id="fruitSearch" class="search" type="search" placeholder="搜尋，例如：芭樂、菇、蝦" autocomplete="off" enterkeyhint="search">
         <p class="hint">選了之後可以按「記住這個畫面」，下次遇到類似的會認得更準（只存在這支手機）。</p>
         <div id="fruitGrid" class="grid"></div>
         <div id="searchEmpty" class="search-empty" hidden>

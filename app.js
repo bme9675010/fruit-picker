@@ -4,7 +4,7 @@ import {
   CLIPVisionModelWithProjection,
   RawImage,
 } from './vendor/transformers-4.3.1.min.js';
-import { FRUITS, VEGETABLES, TIP_LABELS, QUALITY } from './fruits.js';
+import { FRUITS, VEGETABLES, PROTEINS, GROUPS, TIP_LABELS, QUALITY } from './fruits.js';
 
 // 程式庫與 ONNX Runtime 放在這個網站裡（vendor/，見 tools/vendor.mjs），不依賴 jsDelivr；
 // wasm 的快取交給 sw.js，避免同一個檔案在瀏覽器裡存兩份。
@@ -66,7 +66,8 @@ const els = {
   chips: $('candidates'), tips: $('tips'), pauseBtn: $('pauseBtn'), quality: $('quality'),
   listBtn: $('listBtn'), dialog: $('listDialog'), grid: $('fruitGrid'),
 };
-const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES].map((f) => [f.id, f]));
+const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES, ...PROTEINS].map((f) => [f.id, f]));
+const groupSize = (g) => PROTEINS.filter((f) => f.group === g).length;
 
 // ---------- 除錯資訊（網址加上 ?debug=1）：手機實測時截圖或點一下複製回報 ----------
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -376,7 +377,7 @@ async function tick() {
     // 多角度：輪流看整個框框與框框中央，靠下面的平滑（EMA）把兩種結果合起來，運算量不變
     const image = grabReticle(MULTI_VIEW && frameNo++ % 2 ? INNER_VIEW : 1);
     if (image) {
-      const before = shown;
+      const before = tipsFor;
       const t0 = performance.now();
       const v = await embed(image);
       const t1 = performance.now();
@@ -391,7 +392,7 @@ async function tick() {
       ema = ema ? ema.map((p, i) => p * (1 - EMA) + probs[i] * EMA) : probs;
       render(ema, true);
       if (shown && tipsFor === shown) updateQuality(shown, v, true); // 正在問二選一時不判斷
-      stableTicks = shown && shown === before ? stableTicks + 1 : 0;
+      stableTicks = tipsFor && tipsFor === before ? stableTicks + 1 : 0;
       if (errorTicks) setStatus(readyLabel()); // 從錯誤中恢復，狀態列改回來
       errorTicks = 0;
     }
@@ -439,6 +440,20 @@ function render(probs, live) {
     shown = top.id;
   } else {
     shown = null;
+  }
+
+  // 生鮮（魚、肉…）種類多又像：最可能的那種不夠確定、但同一大類加起來夠高時，先顯示大類讓使用者點細項
+  const group = fruitById[top.id].group;
+  const shownSure = shown && prob[shown] >= SURE_AT;
+  if (group && groupSize(group) > 1 && top.p < SURE_AT && !(shownSure || (shown && !fruitById[shown].group))) {
+    const members = ranked.filter((c) => fruitById[c.id].group === group);
+    if (members.reduce((sum, c) => sum + c.p, 0) >= SHOW_AT) {
+      shown = null;
+      document.body.classList.add('found');
+      showGroup(group, members);
+      renderChips(ranked.filter((c) => c.p >= 0.05).slice(0, 4));
+      return;
+    }
   }
 
   // 前兩名很接近：與其猜錯，不如讓使用者二選一
@@ -514,21 +529,38 @@ function showChoice(a, b) {
   els.meta.textContent = '這兩種很像，點選正確的那個（App 也會記住）';
   const wrap = document.createElement('div');
   wrap.className = 'choices';
-  for (const id of [a, b]) {
-    const f = fruitById[id];
-    const btn = document.createElement('button');
-    btn.className = 'choice';
-    const emoji = document.createElement('span');
-    emoji.className = 'choice-emoji';
-    emoji.textContent = f.emoji;
-    const name = document.createElement('b');
-    name.textContent = f.name;
-    const cue = document.createElement('small');
-    cue.textContent = f.cue;
-    btn.append(emoji, name, cue);
-    btn.onclick = () => pin(id);
-    wrap.append(btn);
-  }
+  wrap.append(...[a, b].map(choiceButton));
+  els.tips.replaceChildren(wrap);
+}
+
+function choiceButton(id) {
+  const f = fruitById[id];
+  const btn = document.createElement('button');
+  btn.className = 'choice';
+  const emoji = document.createElement('span');
+  emoji.className = 'choice-emoji';
+  emoji.textContent = f.emoji;
+  const name = document.createElement('b');
+  name.textContent = f.name;
+  const cue = document.createElement('small');
+  cue.textContent = f.cue;
+  btn.append(emoji, name, cue);
+  btn.onclick = () => pin(id);
+  return btn;
+}
+
+// 生鮮大類（例如「魚」）：列出這類的所有品項，最可能的排前面
+function showGroup(group, members) {
+  hideQuality();
+  const key = `group:${group}`;
+  if (tipsFor === key) return;
+  tipsFor = key;
+  els.emoji.textContent = GROUPS[group].emoji;
+  els.name.textContent = `看起來是${GROUPS[group].name}`;
+  els.meta.textContent = '這類種類多、長得像，點選是哪一種（App 也會記住）';
+  const wrap = document.createElement('div');
+  wrap.className = 'choices';
+  wrap.append(...members.map((c) => choiceButton(c.id)));
   els.tips.replaceChildren(wrap);
 }
 
@@ -540,6 +572,7 @@ function showFruit(id, metaHtml) {
   if (tipsFor === id) return;
   tipsFor = id;
   els.tips.replaceChildren(
+    ...(f.checklist ? [checklist(f)] : []),
     ...Object.entries(TIP_LABELS)
       .filter(([key]) => f.tips[key]?.length)
       .map(([key, label]) => {
@@ -556,14 +589,35 @@ function showFruit(id, metaHtml) {
         group.append(h, ul);
         return group;
       }),
-    disclaimer(),
+    disclaimer(f),
   );
 }
 
-function disclaimer() {
+// 生鮮的「買之前檢查」：App 不判斷好壞，讓使用者自己逐項對照
+function checklist(f) {
+  const group = document.createElement('div');
+  group.className = 'tip-group checklist';
+  const h = document.createElement('h4');
+  h.textContent = '✅ 買之前自己檢查（App 不判斷生鮮的新鮮度）';
+  const ul = document.createElement('ul');
+  for (const t of f.checklist) {
+    const li = document.createElement('li');
+    const label = document.createElement('label');
+    const box = Object.assign(document.createElement('input'), { type: 'checkbox' });
+    label.append(box, ` ${t}`);
+    li.append(label);
+    ul.append(li);
+  }
+  group.append(h, ul);
+  return group;
+}
+
+function disclaimer(f) {
   const p = document.createElement('p');
   p.className = 'disclaimer';
-  p.textContent = '挑選技巧依一般常識整理，僅供參考；辨識結果也可能出錯，請以實際觀察為準。';
+  p.textContent = f?.group
+    ? '挑選技巧依一般常識整理，僅供參考。生鮮請以聞、摸與包裝標示（日期、冷藏）為準，有異味或黏滑就不要買；除了標示可生食的產品，都要煮熟再吃。'
+    : '挑選技巧依一般常識整理，僅供參考；辨識結果也可能出錯，請以實際觀察為準。';
   return p;
 }
 
@@ -572,11 +626,11 @@ function showSearching(live) {
   hideQuality();
   qualitySmooth = null;
   els.emoji.textContent = '🔍';
-  els.name.textContent = live ? '把蔬果放進框框裡' : '認不太出來';
-  els.meta.textContent = live ? '對準一種蔬果、光線充足會更準' : '可以點下方候選，或手動選蔬果';
+  els.name.textContent = live ? '把食材放進框框裡' : '認不太出來';
+  els.meta.textContent = live ? '對準一種食材、光線充足會更準' : '可以點下方候選，或手動選擇';
   const p = document.createElement('p');
   p.className = 'hint';
-  p.textContent = '小提醒：一次對準一種蔬果，盡量讓它佔滿框框。認錯的話，點上面的候選或「手動選蔬果」。';
+  p.textContent = '小提醒：一次對準一種食材，盡量讓它佔滿框框。認錯的話，點上面的候選或「手動選擇」。';
   els.tips.replaceChildren(p);
 }
 
@@ -753,7 +807,7 @@ els.listBtn.onclick = () => {
   filterList('');
   els.dialog.showModal();
 };
-els.grid.replaceChildren(...[['水果', FRUITS], ['蔬菜', VEGETABLES]].flatMap(([title, items]) => {
+els.grid.replaceChildren(...[['水果', FRUITS], ['蔬菜', VEGETABLES], ['魚、海鮮、肉、蛋', PROTEINS]].flatMap(([title, items]) => {
   const h = document.createElement('h4');
   h.textContent = title;
   return [h, ...items.map((f) => {

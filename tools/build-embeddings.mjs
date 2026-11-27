@@ -2,7 +2,7 @@
 // 用法：cd tools && npm install && node build-embeddings.mjs && node train.mjs
 import { writeFile } from 'node:fs/promises';
 import { AutoTokenizer, CLIPTextModelWithProjection } from '@huggingface/transformers';
-import { FRUITS, VEGETABLES, BACKGROUNDS } from '../fruits.js';
+import { FRUITS, VEGETABLES, PROTEINS, BACKGROUNDS } from '../fruits.js';
 import { MODEL_ID, SFX } from './model.mjs';
 
 const templates = (kind) => [
@@ -30,9 +30,9 @@ function meanNormalized(vectors) {
 }
 
 const classes = [];
-for (const [items, kind] of [[FRUITS, 'fruit'], [VEGETABLES, 'vegetable']]) {
+for (const [items, kind] of [[FRUITS, 'fruit'], [VEGETABLES, 'vegetable'], [PROTEINS, null]]) {
   for (const item of items) {
-    const texts = item.names.flatMap((n) => templates(kind).map((t) => t.replace('{}', n)));
+    const texts = item.names.flatMap((n) => templates(kind ?? item.kind).map((t) => t.replace('{}', n)));
     classes.push({ id: item.id, embedding: meanNormalized(await embed(texts)) });
   }
 }

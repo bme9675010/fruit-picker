@@ -201,3 +201,10 @@ dialog .btn { width: 100%; margin-top: 12px; }
 }
 .grid button span { font-size: 26px; }
 .grid h4 { grid-column: 1 / -1; margin: 8px 0 0; font-size: 14px; color: var(--accent); }
+
+/* 生鮮的「買之前檢查」 */
+.tip-group.checklist { border: 1px solid rgba(122,211,138,.4); border-radius: 12px; padding: 10px 12px; margin-bottom: 4px; }
+.tip-group.checklist h4 { color: var(--ok); }
+.tip-group.checklist ul { list-style: none; padding-left: 0; }
+.tip-group.checklist label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.tip-group.checklist input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--ok); flex: none; }
