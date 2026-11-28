@@ -208,3 +208,22 @@ dialog .btn { width: 100%; margin-top: 12px; }
 .tip-group.checklist ul { list-style: none; padding-left: 0; }
 .tip-group.checklist label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
 .tip-group.checklist input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--ok); flex: none; }
+
+/* 語音朗讀按鈕 */
+.icon-btn {
+  margin-left: auto; flex: none; width: 44px; height: 44px; border-radius: 50%;
+  font-size: 20px; cursor: pointer; color: var(--text);
+  background: rgba(255,255,255,.08); border: 1px solid var(--line);
+}
+.icon-btn:active { border-color: var(--accent); }
+
+/* 當季 */
+.season-toggle { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 14px; color: var(--muted); cursor: pointer; }
+.season-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.grid .peak { font-size: 10px; color: var(--ok); border: 1px solid rgba(122,211,138,.5); border-radius: 6px; padding: 0 4px; }
+
+/* 讀包裝日期 */
+.date-btn { margin-top: 8px; width: 100%; flex: none; }
+.date-btn:disabled { opacity: .6; }
+.date-out { white-space: pre-line; font-size: 14px; line-height: 1.6; margin-top: 6px; }
+.date-out:empty { display: none; }

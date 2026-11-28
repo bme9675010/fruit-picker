@@ -83,8 +83,24 @@ const EXTRA_QUERIES = {
   beef: ['raw beef', 'beef steak', 'beef cuts', 'wagyu beef', 'beef meat'],
   chicken_thigh: ['chicken legs', 'chicken drumsticks', 'chicken thighs', 'chicken leg quarters'],
   chicken_breast: ['chicken breast', 'chicken fillet', 'chicken breast meat'],
-  whole_chicken: ['whole chicken', 'plucked chicken', 'poultry market', 'chicken carcass'],
+  whole_chicken: ['whole chicken', 'plucked chicken', 'poultry market', 'chicken carcass', 'raw chicken', 'dressed chicken', 'broiler carcass', 'whole chickens market'],
+  crab: ['Scylla serrata', 'mud crab', 'crabs seafood market', 'live crabs', 'Portunus pelagicus'],
+  pomfret: ['Pampus argenteus', 'silver pomfret', 'pomfret fish market', 'pomfret'],
+  mackerel: ['Scomber japonicus', 'Scomber scombrus', 'mackerel fish market', 'saba fish', 'mackerel fillet'],
+  duck: ['duck meat', 'raw duck', 'duck breast', 'whole duck', 'duck carcass'],
+  lamb: ['lamb meat', 'lamb chops', 'mutton', 'rack of lamb', 'lamb cuts'],
+  tofu: ['tofu', 'tofu blocks', 'silken tofu', 'firm tofu', 'bean curd'],
+  dried_tofu: ['dried tofu', 'dougan', 'pressed tofu', 'smoked tofu', 'dry bean curd'],
+  milkfish: ['Chanos chanos', 'bangus fish', 'milkfish market', 'milkfish', 'bangus market', 'milkfish belly', 'raw bangus'],
+  chicken_breast: ['chicken breast', 'chicken fillet', 'chicken breast meat', 'raw chicken breast', 'chicken breast fillets', 'skinless chicken breast'],
+  beef: ['raw beef', 'beef steak', 'beef cuts', 'wagyu beef', 'beef meat', 'ribeye', 'sirloin', 'beef brisket raw', 'sliced beef'],
+  squid: ['Uroteuthis', 'Loligo', 'squid fish market', 'raw squid', 'squid on ice', 'fresh squid'],
+  saury: ['Cololabis saira', 'sanma', 'saury fish market', 'saury', 'sanma fish market'],
 };
+// 準確度較低、容易混淆的品項多收集一些照片
+const BOOST = new Set(['whole_chicken', 'milkfish', 'chicken_breast', 'beef', 'squid', 'saury', 'chinese_yam', 'taro', 'bitter_melon',
+  'pomelo', 'grapefruit', 'napa_cabbage', 'cabbage', 'pomegranate', 'papaya', 'kumquat', 'lemon']);
+const quota = (id) => (BOOST.has(id) ? PER_CLASS * 2 : PER_CLASS);
 const exists = (p) => access(p).then(() => true, () => false);
 const indexFile = new URL('index.json', dir);
 const index = (await exists(indexFile)) ? JSON.parse(await readFile(indexFile, 'utf8')) : {};
@@ -114,7 +130,7 @@ const workers = [worker(), worker(), worker(), worker()];
 
 // 同時搜尋 3 種蔬果
 const todo = [...FRUITS.map((item) => [item, 'fruit']), ...VEGETABLES.map((item) => [item, 'vegetable']), ...PROTEINS.map((item) => [item, item.kind])]
-  .filter(([item]) => !(index[item.id]?.length >= ENOUGH));
+  .filter(([item]) => !(index[item.id]?.length >= (BOOST.has(item.id) ? quota(item.id) - 20 : ENOUGH)));
 async function searcher() {
   for (let next = todo.shift(); next; next = todo.shift()) {
     const [item, kind] = next;
@@ -126,12 +142,12 @@ async function searcher() {
       plain(item.names[0]), `${plain(item.names[0])} market`,
     ];
     search: for (const q of queries) {
-      for (const offset of [0, 30]) {
+      for (const offset of BOOST.has(item.id) ? [0, 30, 60, 90] : [0, 30]) {
         for (const hit of await search(q, item.id, offset)) seen.set(hit.title, hit);
-        if (seen.size >= PER_CLASS) break search;
+        if (seen.size >= quota(item.id)) break search;
       }
     }
-    index[item.id] = [...seen.values()].slice(0, PER_CLASS).map((h) => ({
+    index[item.id] = [...seen.values()].slice(0, quota(item.id)).map((h) => ({
       ...h,
       file: `${item.id}/${createHash('sha1').update(h.title).digest('hex').slice(0, 12)}.jpg`,
     }));

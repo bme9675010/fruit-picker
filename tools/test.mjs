@@ -35,11 +35,14 @@ const raw = makeJudge({})('x', img), calibrated = makeJudge({ rotten: 3 })('x', 
 check('機率總和為 1', Math.abs(raw[0] + raw[1] - 1) < 1e-9);
 check('沒校準時偏向腐爛、校準後改判新鮮', raw[1] > raw[0] && calibrated[0] > calibrated[1], `腐爛 ${raw[1].toFixed(2)} → ${calibrated[1].toFixed(2)}`);
 check('不認識的品項不判斷', makeJudge({})('nope', img) === null);
+const rotScore = new Function('qualityData', `${grab('rotScore')}\nreturn rotScore;`);
+const rs = rotScore({ rot: { w: [1, 0], b: -0.5, threshold: 2 } });
+check('「爛了沒」分數：越像腐爛方向分數越高', rs([0.9, 0.1]) > 2 && rs([0.2, 0.9]) < 2 && rotScore(null)([1, 0]) === null, `${rs([0.9, 0.1]).toFixed(1)} / ${rs([0.2, 0.9]).toFixed(1)}`);
 
 // ---- 2. 清單搜尋 ----
 const { FRUITS, VEGETABLES, PROTEINS, GROUPS } = await import(new URL('../fruits.js', import.meta.url));
 const mk = (tagName, extra = {}) => ({ tagName, hidden: false, dataset: {}, textContent: '', ...extra });
-const children = [['水果', FRUITS], ['蔬菜', VEGETABLES], ['魚、海鮮、肉、蛋', PROTEINS]].flatMap(([t, items]) => [mk('H4', { textContent: t }), ...items.map((f) => mk('BUTTON', { value: f.id, dataset: { name: f.name } }))]);
+const children = [['水果', FRUITS], ['蔬菜', VEGETABLES], ['魚、海鮮、肉、蛋、豆製品', PROTEINS]].flatMap(([t, items]) => [mk('H4', { textContent: t }), ...items.map((f) => mk('BUTTON', { value: f.id, dataset: { name: f.name } }))]);
 const nodes = { searchEmpty: mk('DIV'), searchTerm: mk('B'), searchWeb: mk('A', { href: '' }) };
 const filterList = new Function('els', '$', `${grab('filterList')}\nreturn filterList;`)({ grid: { children } }, (id) => nodes[id]);
 const visible = () => children.filter((c) => c.tagName === 'BUTTON' && !c.hidden).map((c) => c.dataset.name);
@@ -49,7 +52,7 @@ check('搜尋「芭」', visible().join() === '芭樂,香蕉／芭蕉' && heads(
 filterList('菇');
 check('搜尋「菇」只顯示蔬菜分類', heads().join() === '蔬菜' && visible().length >= 6, visible().join('、'));
 filterList('蝦');
-check('搜尋「蝦」只顯示生鮮分類', heads().join() === '魚、海鮮、肉、蛋' && visible().join() === '白蝦,草蝦／明蝦', visible().join('、'));
+check('搜尋「蝦」只顯示生鮮分類', heads().join() === '魚、海鮮、肉、蛋、豆製品' && visible().join() === '白蝦,草蝦／明蝦', visible().join('、'));
 filterList('羽衣甘藍');
 check('找不到時顯示「上網查」', !nodes.searchEmpty.hidden && visible().length === 0 && heads().length === 0);
 check('上網查的連結', nodes.searchWeb.href === 'https://www.google.com/search?q=' + encodeURIComponent('羽衣甘藍 怎麼挑'), decodeURIComponent(nodes.searchWeb.href));
@@ -60,6 +63,50 @@ check('清空搜尋恢復全部', visible().length === FRUITS.length + VEGETABLE
 const allIds = [...FRUITS, ...VEGETABLES, ...PROTEINS].map((f) => f.id);
 check('品項 id 不重複', new Set(allIds).size === allIds.length);
 check('每個生鮮品項都有大類、檢查清單與外觀重點', PROTEINS.every((f) => GROUPS[f.group] && f.checklist?.length && f.cue && f.kind));
+
+// ---- 2c. 卡片要顯示什麼：一般品項、生鮮大類、二選一 ----
+const consts = app.match(/^const (SHOW_AT|DROP_AT|SURE_AT|ASK_MARGIN|ASK_MIN2) = [\d.]+;/gm).join('\n');
+const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES, ...PROTEINS].map((f) => [f.id, f]));
+const groupSize = (g) => PROTEINS.filter((f) => f.group === g).length;
+const decideView = new Function('fruitById', 'groupSize', `${consts}
+${grab('decideView')}
+return decideView;`)(fruitById, groupSize);
+const R = (pairs) => pairs.map(([id, p]) => ({ id, p }));
+let d = decideView(R([['whole_chicken', 0.45], ['chicken_thigh', 0.38], ['chicken_breast', 0.11], ['apple', 0.06]]), null);
+check('雞肉不確定時顯示大類', d.kind === 'group' && d.group === 'chicken' && d.members[0].id === 'whole_chicken' && d.shown === null, d.kind);
+d = decideView(R([['whole_chicken', 0.8], ['chicken_thigh', 0.1], ['apple', 0.1]]), null);
+check('雞肉很確定時直接顯示品項', d.kind === 'fruit' && d.shown === 'whole_chicken');
+d = decideView(R([['egg', 0.5], ['apple', 0.1], ['banana', 0.05]]), null);
+check('只有一種的大類（雞蛋）不顯示大類', d.kind === 'fruit' && d.shown === 'egg', d.kind);
+d = decideView(R([['tilapia', 0.3], ['apple', 0.3], ['milkfish', 0.1]]), null);
+check('同類加起來不夠高時不顯示大類', d.kind !== 'group', d.kind);
+d = decideView(R([['mango', 0.5], ['papaya', 0.4], ['apple', 0.1]]), null);
+check('前兩名接近時二選一', d.kind === 'ask' && d.a === 'mango' && d.b === 'papaya');
+d = decideView(R([['papaya', 0.4], ['mango', 0.35], ['apple', 0.25]]), 'mango');
+check('目前顯示的還夠高就不換（遲滯）', d.shown === 'mango', d.shown);
+d = decideView(R([['pork_belly', 0.4], ['pork_loin', 0.3], ['apple', 0.3]]), 'apple');
+check('正在顯示蔬果時不切到生鮮大類', d.kind !== 'group' && d.shown === 'apple', `${d.kind} ${d.shown}`);
+d = decideView(R([['apple', 0.2], ['banana', 0.05], ['mango', 0.03]]), null);
+check('都不夠高時顯示「找不到」', d.kind === 'search');
+
+// ---- 2d. 產季判斷 ----
+const seasonWords = app.match(/^const SEASON_WORDS = .*;$/m)[0];
+const inSeason = new Function(`${seasonWords}\n${grab('inSeason')}\nreturn inSeason;`)();
+const S = [['5–8 月', 6, true], ['5–8 月', 9, false], ['11–3 月', 1, true], ['11–3 月', 4, false], ['全年', 6, false],
+  ['全年（冬季最甜）', 1, true], ['全年（冬季最甜）', 7, false], ['全年（秋冬盛產）', 10, true], ['全年（7–9 月盛產）', 8, true],
+  ['6–8 月、11–1 月', 12, true], ['嫩薑 6–9 月、老薑全年', 3, false], ['全年（進口）', 5, false], ['9–12 月（秋蟹最肥）', 10, true]];
+const badSeason = S.filter(([t, m, want]) => inSeason(t, m) !== want);
+check('產季判斷', !badSeason.length, badSeason.map(([t, m]) => `${t}@${m}月`).join('、'));
+const peakNow = [...FRUITS, ...VEGETABLES, ...PROTEINS].filter((f) => inSeason(f.season, 11)).length;
+check('11 月有當季品項、但不是全部', peakNow > 10 && peakNow < 100, `${peakNow} 種`);
+
+// ---- 2e. 從文字辨識結果找包裝日期 ----
+const findDates = new Function(`${grab('findDates')}\nreturn findDates;`)();
+const today = new Date(2026, 10, 28);
+const ds = (t) => findDates(t, today).map((d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`).join(',');
+check('西元年 2026.11.30', ds('EXP 2026.11.30') === '2026-11-30', ds('EXP 2026.11.30'));
+check('民國年 115/12/02 與兩位數年 26-11-25', ds('115/12/02 26-11-25') === '2026-11-25,2026-12-2', ds('115/12/02 26-11-25'));
+check('連寫 20261205、忽略不合理的日期與條碼', ds('20261205 4712345678901 2026.13.40 1234') === '2026-12-5', ds('20261205 4712345678901 2026.13.40 1234'));
 
 // ---- 3. Service worker：路由與離線 ----
 const sw = await readFile(root + 'sw.js', 'utf8');

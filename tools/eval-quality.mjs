@@ -141,3 +141,18 @@ for (const b of [0, 2, 3, 4, 5, 6, 8]) {
     console.log(`  bias ${b}/${b + 1} T=${T}：新鮮誤報 ${(fa * 100).toFixed(1)}%｜腐爛抓到 ${rotHit}/${rot.length}（含碰傷 ${rotAny}）｜碰傷抓到 ${dmgHit}/${dmg.length}｜熟度 對 ${ripHit}/顯示 ${ripShown}/共 ${rip.length}`);
   }
 }
+
+// 5. 加上「爛了沒」影像分類器（rot-detector.mjs）：任一個判為腐爛／碰傷就算
+if (quality.rot) {
+  const rw = decode(quality.rot.w);
+  const rotHit = (r) => 20 * (dot(rw, r.v) + quality.rot.b) >= quality.rot.threshold;
+  console.log(`\n加上影像分類器（門檻 ${quality.rot.threshold}）：`);
+  for (const b of [3, 4, 5, 6, 8]) {
+    bias = { damaged: b + 1, rotten: b };
+    const T = quality.threshold;
+    const flagged = (r) => { const t = judge(r.id, r.v)[0]; return rotHit(r) || (['damaged', 'rotten'].includes(t.key) && t.p >= T); };
+    const fa = fresh.filter(flagged).length / fresh.length;
+    const rot = results.filter((r) => r.state === 'rotten' && split(r.title)); // 只算分類器沒看過的（測試集）
+    console.log(`  文字 bias ${b}/${b + 1}：新鮮誤報 ${(fa * 100).toFixed(1)}%｜腐爛抓到 ${rot.filter(flagged).length}/${rot.length}（影像分類器單獨 ${rot.filter(rotHit).length}）`);
+  }
+}

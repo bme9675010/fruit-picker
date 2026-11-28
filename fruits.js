@@ -1343,7 +1343,7 @@ export const VEGETABLES = [
   },
 ];
 
-// ---------- 生鮮：魚、海鮮、肉、蛋 ----------
+// ---------- 生鮮：魚、海鮮、肉、蛋、豆製品 ----------
 // 外觀相近的種類多（魚種、肉的部位），所以辨識不夠確定時改成「先認大類、再讓使用者點細項」（GROUPS）。
 // 不做「好／不好」的外觀判斷（判斷錯了可能吃壞肚子），改成 checklist 讓使用者自己對照。
 export const GROUPS = {
@@ -1351,8 +1351,9 @@ export const GROUPS = {
   fish: { name: '魚', emoji: '🐟' },
   seafood: { name: '蝦、貝、透抽', emoji: '🦐' },
   pork: { name: '豬肉', emoji: '🐖' },
-  beef: { name: '牛肉', emoji: '🐄' },
-  chicken: { name: '雞肉', emoji: '🐔' },
+  beef: { name: '牛、羊肉', emoji: '🐄' },
+  chicken: { name: '雞、鴨肉', emoji: '🐔' },
+  soy: { name: '豆腐、豆干', emoji: '⬜' },
 };
 
 export const PROTEINS = [
@@ -1589,6 +1590,96 @@ export const PROTEINS = [
     },
     checklist: ['皮色均勻、沒有瘀血或破皮', '身形飽滿、肉有彈性', '沒有腥臭味'],
   },
+  {
+    id: 'crab', group: 'seafood', kind: 'seafood', name: '螃蟹', emoji: '🦀', season: '9–12 月（秋蟹最肥）',
+    cue: '硬殼、兩隻大螯',
+    names: ['live crabs', 'fresh mud crabs tied with string', 'raw crabs at a seafood market'],
+    tips: {
+      look: ['活蟹眼睛靈活、腳會動，蟹腳完整沒有斷', '母蟹腹部（蟹臍）圓、公蟹尖；秋天母蟹有膏、冬天公蟹肉多', '殼色青亮、腹部白淨'],
+      touch: ['拿起來沉甸甸的較肥；按壓腹部和腳的關節硬實'],
+      smell: ['沒有腥臭味'],
+      avoid: ['不動或腳一碰就垂下（可能快死或已死）', '拿起來輕飄飄、按壓腹部軟軟的（空殼、肉少）'],
+      store: ['死蟹容易產生毒素，最好買活的當天煮'],
+    },
+    checklist: ['是活的、腳會動', '拿起來沉、腹部按壓硬實', '蟹腳完整、沒有腥臭味'],
+  },
+  {
+    id: 'pomfret', group: 'fish', kind: 'seafood', name: '白鯧', emoji: '🐟', season: '10–3 月',
+    cue: '扁圓菱形，全身銀白',
+    names: ['a raw silver pomfret', 'fresh white pomfret fish', 'silver pomfrets on ice at a fish market'],
+    tips: {
+      look: ['全身銀白有光澤、魚鱗完整', '魚眼清澈飽滿、魚鰓鮮紅', '魚身厚實、肚子不破'],
+      touch: ['按壓魚身結實有彈性'],
+      smell: ['沒有腥臭味'],
+      avoid: ['魚身發黃、有血斑', '魚眼混濁凹陷、肚子軟爛'],
+      store: ['冷藏當天吃，或分裝冷凍'],
+    },
+    checklist: ['魚眼清澈、不混濁', '魚鰓鮮紅', '銀白有光澤、按壓有彈性'],
+  },
+  {
+    id: 'mackerel', group: 'fish', kind: 'seafood', name: '鯖魚', emoji: '🐟', season: '全年（冷凍、薄鹽片為主）',
+    cue: '背部藍綠色波浪斑紋',
+    names: ['raw mackerel', 'fresh whole mackerel with blue wavy stripes', 'salted mackerel fillets'],
+    tips: {
+      look: ['背部藍綠斑紋清楚、有光澤', '整尾的看魚眼清澈、魚鰓鮮紅', '薄鹽鯖魚片挑肉色白、油亮、沒有發黃的'],
+      touch: ['魚身硬挺有彈性'],
+      smell: ['沒有油耗味或腥臭味'],
+      avoid: ['魚肉發黃（油脂氧化）、魚肚破', '包裝內結很多冰霜（可能退冰又冷凍過）'],
+      store: ['鯖魚容易壞，新鮮的當天吃，或直接冷凍'],
+    },
+    checklist: ['斑紋清楚有光澤', '魚肉不發黃、沒有油耗味', '冷凍包裝沒有很多冰霜'],
+  },
+  {
+    id: 'duck', group: 'chicken', kind: 'meat', name: '鴨肉', emoji: '🦆', season: '全年（冬季最多）',
+    cue: '皮比雞厚、肉色深紅',
+    names: ['raw duck meat', 'a raw whole duck', 'raw duck breast with skin'],
+    tips: {
+      look: ['肉色深紅有光澤，皮呈乳白或淡黃', '皮下脂肪潔白、毛孔沒有殘毛'],
+      touch: ['按壓有彈性、不黏手'],
+      smell: ['沒有腥臭或酸味'],
+      avoid: ['肉色發黑、皮有瘀血', '表面黏滑、有異味'],
+      store: ['冷藏 1–2 天內煮，或分裝冷凍'],
+    },
+    checklist: ['肉色深紅有光澤', '皮沒有瘀血或殘毛', '不黏滑、沒有異味'],
+  },
+  {
+    id: 'lamb', group: 'beef', kind: 'meat', name: '羊肉', emoji: '🐑', season: '全年（冬季最多）',
+    cue: '暗紅色肉，油脂偏白而硬',
+    names: ['raw lamb meat', 'raw lamb chops', 'sliced raw mutton'],
+    tips: {
+      look: ['羔羊肉淡紅、成羊（羊肉）深紅，都要有光澤', '油脂潔白，肥瘦分明'],
+      touch: ['按壓有彈性、會回彈'],
+      smell: ['有羊羶味是正常的，但不能有酸臭味'],
+      avoid: ['顏色發暗、發灰', '表面黏滑、有酸臭味'],
+      store: ['冷藏 2–3 天內吃完，或分裝冷凍'],
+    },
+    checklist: ['顏色紅潤有光澤', '按壓會回彈、不黏滑', '沒有酸臭味（羊羶味正常）'],
+  },
+  {
+    id: 'tofu', group: 'soy', kind: 'food', name: '豆腐', emoji: '⬜', season: '全年',
+    cue: '白色方塊，表面光滑',
+    names: ['blocks of fresh white tofu', 'soft silken tofu', 'firm tofu in water'],
+    tips: {
+      look: ['顏色乳白或淡黃、表面光滑完整', '盒裝看製造日期與有效期限，挑冷藏販售的'],
+      smell: ['有淡淡豆香，沒有酸味'],
+      avoid: ['有酸味、表面黏滑、泡的水混濁', '包裝膨脹（可能已經變質）'],
+      store: ['冷藏，開封後泡冷開水、每天換水，1–2 天內吃完'],
+    },
+    checklist: ['表面光滑、沒有黏滑', '沒有酸味', '在有效期限內、包裝沒有膨脹'],
+  },
+  {
+    id: 'dried_tofu', group: 'soy', kind: 'food', name: '豆干', emoji: '🟫', season: '全年',
+    cue: '褐色或白色的扁方塊，較硬',
+    names: ['dried tofu', 'brown pressed tofu squares', 'Taiwanese pressed dried tofu blocks'],
+    tips: {
+      look: ['顏色自然，不要白得過亮或黃得太鮮豔', '盒裝看有效期限，挑冷藏販售的'],
+      touch: ['有彈性、不易碎'],
+      smell: ['豆香自然，沒有酸味'],
+      avoid: ['表面黏滑、有酸味', '摸起來太硬、彈性異常（可能添加物過多）'],
+      store: ['冷藏，3 天內吃完'],
+    },
+    checklist: ['顏色自然、不黏滑', '沒有酸味', '在有效期限內、有冷藏販售'],
+  },
 ];
 
 // 非蔬果的畫面，讓鏡頭沒對準蔬果時不會硬猜一種。
@@ -1604,6 +1695,13 @@ export const BACKGROUNDS = [
   'a blurry photo',
   'a dark photo',
   'a photo of a street',
+  // 煮好的菜：避免被認成生肉、生菜
+  'a photo of a cooked meal on a plate',
+  'a photo of a bento lunch box',
+  'a photo of a bowl of noodle soup',
+  'a photo of a bowl of rice with side dishes',
+  'a photo of fried food',
+  'a photo of a restaurant dish',
 ];
 
 export const TIP_LABELS = {
@@ -1617,17 +1715,17 @@ export const TIP_LABELS = {
 
 // ---------- 外觀判斷：從畫面推測新鮮度、熟度（CLIP 文字比對，{} 換成品項的英文名稱） ----------
 // verdict：good＝可以買、wait＝再放幾天、warn＝要注意、bad＝不建議
-const ROTTEN = { key: 'rotten', label: '看起來有腐爛或發霉', verdict: 'bad', advice: '不建議購買', prompts: ['a rotten moldy {}', 'a spoiled, decaying {}'] };
+const ROTTEN = { key: 'rotten', label: '看起來有腐爛或發霉', verdict: 'bad', advice: '不建議購買', prompts: ['a rotten moldy {}', 'a spoiled, decaying {}', 'a {} covered in fuzzy white or green mold', 'a mushy rotting {} with dark soft spots', 'a shriveled, spoiled {} going bad'] };
 export const QUALITY = {
   general: [
     { key: 'fresh', label: '外觀新鮮', verdict: 'good', advice: '外觀沒看到明顯問題', prompts: ['a fresh {}', 'a fresh, unblemished {}'] },
-    { key: 'damaged', label: '可能有碰傷或斑點', verdict: 'warn', advice: '翻過來看看有沒有軟爛、凹陷或褐斑', prompts: ['a bruised {} with brown spots', 'a damaged {} with blemishes'] },
+    { key: 'damaged', label: '可能有碰傷或斑點', verdict: 'warn', advice: '翻過來看看有沒有軟爛、凹陷或褐斑', prompts: ['a bruised {} with brown spots', 'a damaged {} with blemishes', 'a {} with a soft dented bruise', 'a {} with cracked, scarred skin'] },
     ROTTEN,
   ],
   leafy: [
     { key: 'fresh', label: '外觀新鮮', verdict: 'good', advice: '葉片看起來挺而翠綠', prompts: ['fresh crisp green {}', 'fresh {}'] },
     { key: 'damaged', label: '有點萎黃', verdict: 'warn', advice: '挑葉片挺、沒有黃葉的', prompts: ['wilted, yellowing {}', 'limp wilted {}'] },
-    { key: 'rotten', label: '看起來有腐爛', verdict: 'bad', advice: '不建議購買', prompts: ['rotting slimy {}', 'rotten decaying {}'] },
+    { key: 'rotten', label: '看起來有腐爛', verdict: 'bad', advice: '不建議購買', prompts: ['rotting slimy {}', 'rotten decaying {}', 'black mushy rotten {} leaves', 'spoiled {} with slimy dark patches'] },
   ],
   // 會變色的蔬果另外判斷熟度（取代 general）
   ripeness: {

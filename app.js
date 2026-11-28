@@ -40,7 +40,8 @@ const LITE_KEY = 'fp-lite';
 const MODEL_FILE = { main: 'embeddings-s1.json', lite: 'embeddings.json' };
 // 外觀判斷（新鮮／碰傷／腐爛、生／熟）的文字特徵，見 tools/build-quality.mjs
 const QUALITY_FILE = { main: 'quality-s1.json', lite: 'quality.json' };
-const Q_EMA = 0.35;          // 即時模式的外觀判斷平滑，比辨識更保守
+const Q_EMA = 0.35;
+const ROT_UNKNOWN_MARGIN = 2;  // 認不出品項時，「爛了沒」門檻再加這麼多（見 warnIfRotten）          // 即時模式的外觀判斷平滑，比辨識更保守
 const readyLabel = () => (session(LITE_KEY) ? '辨識中・輕量 ⇄' : '辨識中');
 const EMA = 0.45;            // 新結果的權重，越小畫面越穩定
 const SHOW_AT = 0.45;        // 機率超過這個值才顯示為辨識結果
@@ -64,10 +65,22 @@ const els = {
   loadBar: $('loadBar'), sheet: $('sheet'), handle: $('sheetHandle'),
   emoji: $('fruitEmoji'), name: $('fruitName'), meta: $('fruitMeta'),
   chips: $('candidates'), tips: $('tips'), pauseBtn: $('pauseBtn'), quality: $('quality'),
-  listBtn: $('listBtn'), dialog: $('listDialog'), grid: $('fruitGrid'),
+  listBtn: $('listBtn'), dialog: $('listDialog'), grid: $('fruitGrid'), speakBtn: $('speakBtn'),
 };
 const fruitById = Object.fromEntries([...FRUITS, ...VEGETABLES, ...PROTEINS].map((f) => [f.id, f]));
 const groupSize = (g) => PROTEINS.filter((f) => f.group === g).length;
+
+// ---------- 產季：從「5–8 月」「全年（冬季最甜）」這類文字判斷某個月是不是盛產期 ----------
+const SEASON_WORDS = { 春: [3, 4, 5], 夏: [6, 7, 8], 秋: [9, 10, 11], 冬: [12, 1, 2] };
+function inSeason(season, month) {
+  const ranges = [...season.matchAll(/(\d+)–(\d+) ?月/g)].map((m) => [+m[1], +m[2]]);
+  for (const [a, b] of ranges) if (a <= b ? month >= a && month <= b : month >= a || month <= b) return true;
+  if (ranges.length) return false;
+  // 「全年（冬季最甜）」「全年（秋冬盛產）」：只有提到的季節算盛產
+  const words = (season.match(/（(.*)）/)?.[1] ?? '').match(/[春夏秋冬](?=[春夏秋冬]*季?(最|盛|多))/g);
+  return !!words?.some((w) => SEASON_WORDS[w].includes(month));
+}
+const thisMonth = new Date().getMonth() + 1;
 
 // ---------- 除錯資訊（網址加上 ?debug=1）：手機實測時截圖或點一下複製回報 ----------
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -197,7 +210,11 @@ function loadModel() {
     // 外觀判斷的資料載入失敗不影響辨識
     qualityData = await fetch(session(LITE_KEY) ? QUALITY_FILE.lite : QUALITY_FILE.main)
       .then((r) => r.json())
-      .then((q) => ({ ...q, items: Object.fromEntries(Object.entries(q.items).map(([id, it]) => [id, { kind: it.kind, states: it.states.map((s) => ({ key: s.key, v: decodeVec(s.v) })) }])) }))
+      .then((q) => ({
+        ...q,
+        items: Object.fromEntries(Object.entries(q.items).map(([id, it]) => [id, { kind: it.kind, states: it.states.map((s) => ({ key: s.key, v: decodeVec(s.v) })) }])),
+        rot: q.rot && { ...q.rot, w: decodeVec(q.rot.w) }, // 「爛了沒」影像分類器（見 tools/rot-detector.mjs）
+      }))
       .catch((err) => { console.warn('外觀判斷資料載入失敗', err); return null; });
 
     const progress_callback = (p) => {
@@ -430,45 +447,39 @@ function rankFruits(probs) {
 
 function render(probs, live) {
   const ranked = rankFruits(probs);
-  const prob = Object.fromEntries(ranked.map((c) => [c.id, c.p]));
-  const top = ranked[0];
+  const view = decideView(ranked, shown);
+  shown = view.shown;
+  document.body.classList.toggle('found', view.kind === 'fruit' || view.kind === 'group');
+  if (view.kind === 'group') showGroup(view.group, view.members);
+  else if (view.kind === 'ask') showChoice(view.a, view.b);
+  else if (view.kind === 'fruit') showFruit(shown, `${live ? '即時辨識' : '照片辨識'}・信心 <b>${Math.round(view.p * 100)}%</b>`);
+  else showSearching(live);
+  // 認不出品項（或還在二選一）時，「爛了沒」分類器不需要知道品項：畫面看起來爛了就直接提醒
+  if (view.kind === 'search' || view.kind === 'ask') warnIfRotten(lastEmbedding, live);
+  renderChips(ranked.filter((c) => c.p >= 0.05).slice(0, 4));
+}
 
-  // 遲滯：目前顯示的水果還夠高就不換，避免畫面跳來跳去
-  if (shown && prob[shown] >= DROP_AT && !(top.id !== shown && top.p >= SHOW_AT && top.p > prob[shown] + 0.15)) {
-    // 保持不變
-  } else if (top.p >= SHOW_AT) {
-    shown = top.id;
-  } else {
-    shown = null;
-  }
+// 決定卡片要顯示什麼（純邏輯，tools/test.mjs 有測試）。ranked：依機率排序的 [{ id, p }]；current：目前顯示的品項
+// 回傳 { kind: 'fruit' | 'group' | 'ask' | 'search', shown, ... }
+function decideView(ranked, current) {
+  const prob = Object.fromEntries(ranked.map((c) => [c.id, c.p]));
+  const [top, second] = ranked;
+  let shown;
+  // 遲滯：目前顯示的品項還夠高就不換，避免畫面跳來跳去
+  if (current && prob[current] >= DROP_AT && !(top.id !== current && top.p >= SHOW_AT && top.p > prob[current] + 0.15)) shown = current;
+  else shown = top.p >= SHOW_AT ? top.id : null;
+  const sure = shown && prob[shown] >= SURE_AT;
 
   // 生鮮（魚、肉…）種類多又像：最可能的那種不夠確定、但同一大類加起來夠高時，先顯示大類讓使用者點細項
   const group = fruitById[top.id].group;
-  const shownSure = shown && prob[shown] >= SURE_AT;
-  if (group && groupSize(group) > 1 && top.p < SURE_AT && !(shownSure || (shown && !fruitById[shown].group))) {
+  if (group && groupSize(group) > 1 && top.p < SURE_AT && !sure && !(shown && !fruitById[shown].group)) {
     const members = ranked.filter((c) => fruitById[c.id].group === group);
-    if (members.reduce((sum, c) => sum + c.p, 0) >= SHOW_AT) {
-      shown = null;
-      document.body.classList.add('found');
-      showGroup(group, members);
-      renderChips(ranked.filter((c) => c.p >= 0.05).slice(0, 4));
-      return;
-    }
+    if (members.reduce((sum, c) => sum + c.p, 0) >= SHOW_AT) return { kind: 'group', shown: null, group, members };
   }
-
   // 前兩名很接近：與其猜錯，不如讓使用者二選一
-  const second = ranked[1];
-  const ask = second.p >= ASK_MIN2 && top.p - second.p < ASK_MARGIN && !(shown && prob[shown] >= SURE_AT);
-
-  document.body.classList.toggle('found', !!shown && !ask);
-  if (ask) {
-    showChoice(top.id, second.id);
-  } else if (shown) {
-    showFruit(shown, `${live ? '即時辨識' : '照片辨識'}・信心 <b>${Math.round(prob[shown] * 100)}%</b>`);
-  } else {
-    showSearching(live);
-  }
-  renderChips(ranked.filter((c) => c.p >= 0.05).slice(0, 4));
+  if (second.p >= ASK_MIN2 && top.p - second.p < ASK_MARGIN && !sure) return { kind: 'ask', shown, a: top.id, b: second.id };
+  if (shown) return { kind: 'fruit', shown, p: prob[shown] };
+  return { kind: 'search', shown: null };
 }
 
 let tipsFor = null;
@@ -491,17 +502,50 @@ function judgeQuality(id, v) {
   return e.map((x) => x / sum);
 }
 
+// 「爛了沒」分數：分數 ≥ rot.threshold 就判為腐爛（門檻設在新鮮照片誤報約 3%）
+function rotScore(v) {
+  const r = qualityData?.rot;
+  if (!r || !v) return null;
+  let d = 0;
+  for (let i = 0; i < v.length; i++) d += r.w[i] * v[i];
+  return 20 * (d + r.b);
+}
+
 function updateQuality(id, v, live) {
   let probs = judgeQuality(id, v);
   if (!probs) return hideQuality();
-  if (live && qualitySmooth?.id === id) probs = probs.map((p, i) => qualitySmooth.probs[i] * (1 - Q_EMA) + p * Q_EMA);
-  qualitySmooth = live ? { id, probs } : null;
+  let rot = rotScore(v);
+  const prev = live && qualitySmooth?.id === id ? qualitySmooth : null;
+  if (prev) {
+    probs = probs.map((p, i) => prev.probs[i] * (1 - Q_EMA) + p * Q_EMA);
+    if (rot !== null) rot = prev.rot * (1 - Q_EMA) + rot * Q_EMA;
+  }
+  qualitySmooth = live ? { id, probs, rot } : null;
   const item = qualityData.items[id];
-  const best = probs.indexOf(Math.max(...probs));
-  // 不夠確定就不顯示，寧可不說也不要亂說
-  if (probs[best] < qualityData.threshold) return hideQuality();
   const defs = item.kind === 'ripeness' ? QUALITY.ripeness[id] : QUALITY[item.kind];
-  const state = defs.find((s) => s.key === item.states[best].key);
+  let state;
+  if (rot !== null && rot >= qualityData.rot.threshold) {
+    state = defs.find((s) => s.key === 'rotten');
+  } else {
+    const best = probs.indexOf(Math.max(...probs));
+    // 不夠確定就不顯示，寧可不說也不要亂說
+    if (probs[best] < qualityData.threshold) return hideQuality();
+    state = defs.find((s) => s.key === item.states[best].key);
+  }
+  showQualityState(state);
+}
+
+function warnIfRotten(v, live) {
+  let rot = rotScore(v);
+  if (rot === null) return;
+  if (live && qualitySmooth?.id === '*') rot = qualitySmooth.rot * (1 - Q_EMA) + rot * Q_EMA;
+  qualitySmooth = live ? { id: '*', rot } : null;
+  // 不知道品項時誤報的代價較高（可能對著桌子、牆壁），門檻提高：非蔬果照片誤報 2.8% → 1.0%，腐爛仍抓到約 37%
+  if (rot >= qualityData.rot.threshold + ROT_UNKNOWN_MARGIN) showQualityState(QUALITY.general.find((s) => s.key === 'rotten'));
+  else hideQuality();
+}
+
+function showQualityState(state) {
   const icon = { good: '👍', wait: '⏳', warn: '⚠️', bad: '🚫' }[state.verdict];
   els.quality.className = `quality ${state.verdict}`;
   els.quality.replaceChildren();
@@ -521,6 +565,7 @@ function hideQuality() {
 
 function showChoice(a, b) {
   hideQuality();
+  els.speakBtn.hidden = true;
   const key = [a, b].sort().join('|');
   if (tipsFor === key) return;
   tipsFor = key;
@@ -552,6 +597,7 @@ function choiceButton(id) {
 // 生鮮大類（例如「魚」）：列出這類的所有品項，最可能的排前面
 function showGroup(group, members) {
   hideQuality();
+  els.speakBtn.hidden = true;
   const key = `group:${group}`;
   if (tipsFor === key) return;
   tipsFor = key;
@@ -568,9 +614,11 @@ function showFruit(id, metaHtml) {
   const f = fruitById[id];
   els.emoji.textContent = f.emoji;
   els.name.textContent = f.name;
-  els.meta.innerHTML = `${metaHtml}・產季 ${f.season}`;
+  els.meta.innerHTML = `${metaHtml}・產季 ${f.season}${inSeason(f.season, thisMonth) ? '（<b>現在當季</b>）' : ''}`;
+  els.speakBtn.hidden = !('speechSynthesis' in window);
   if (tipsFor === id) return;
   tipsFor = id;
+  stopSpeaking();
   els.tips.replaceChildren(
     ...(f.checklist ? [checklist(f)] : []),
     ...Object.entries(TIP_LABELS)
@@ -608,8 +656,92 @@ function checklist(f) {
     li.append(label);
     ul.append(li);
   }
-  group.append(h, ul);
+  const dateBtn = Object.assign(document.createElement('button'), { className: 'btn small date-btn', type: 'button', textContent: '📅 用鏡頭讀包裝上的日期' });
+  const dateOut = Object.assign(document.createElement('div'), { className: 'date-out' });
+  dateOut.setAttribute('role', 'status');
+  dateBtn.onclick = () => readDate(dateOut, dateBtn);
+  group.append(h, ul, dateBtn, dateOut);
   return group;
+}
+
+// ---------- 讀包裝日期（Tesseract.js 文字辨識，只認英數字；第一次使用才下載約 7MB） ----------
+const TESS_DIR = new URL('vendor/tesseract-7.0.0/', location.href).href;
+let ocrWorker = null;
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = Object.assign(document.createElement('script'), { src, onload: resolve, onerror: () => reject(new Error('程式庫下載失敗')) });
+    document.head.append(el);
+  });
+}
+async function getOcr() {
+  ocrWorker ??= (async () => {
+    if (!window.Tesseract) await loadScript(`${TESS_DIR}tesseract.min.js`);
+    const worker = await Tesseract.createWorker('eng', 1, {
+      workerPath: `${TESS_DIR}worker.min.js`, corePath: `${TESS_DIR}tesseract-core-simd-lstm.wasm.js`, langPath: TESS_DIR.replace(/\/$/, ''),
+    });
+    await worker.setParameters({ tessedit_char_whitelist: '0123456789./-: ' });
+    return worker;
+  })().catch((err) => { ocrWorker = null; throw err; });
+  return ocrWorker;
+}
+// 要辨識的畫面：照片模式用整張照片；相機模式用對準框裡的畫面（原始解析度，小字才讀得到）
+function dateImage() {
+  if (!els.still.hidden) return els.still;
+  const v = els.video;
+  if (!v.videoWidth) return null;
+  const box = v.getBoundingClientRect(), r = els.reticle.getBoundingClientRect();
+  const scale = Math.max(box.width / v.videoWidth, box.height / v.videoHeight);
+  const offX = (box.width - v.videoWidth * scale) / 2 + box.left, offY = (box.height - v.videoHeight * scale) / 2 + box.top;
+  const size = r.width / scale;
+  const c = document.createElement('canvas');
+  c.width = c.height = Math.round(Math.min(size * 2, 1600)); // 小字放大兩倍比較好認
+  c.getContext('2d').drawImage(v, (r.left - offX) / scale, (r.top - offY) / scale, size, size, 0, 0, c.width, c.height);
+  return c;
+}
+// 從辨識出的文字找日期：2026.11.30、2026/11/30、26-11-30、115.11.30（民國年）、20261130
+function findDates(text, today = new Date()) {
+  const found = new Map();
+  const add = (y, m, d) => {
+    y = +y; m = +m; d = +d;
+    if (y < 100) y += 2000; else if (y < 200) y += 1911; // 兩位數西元年、三位數民國年
+    const date = new Date(y, m - 1, d);
+    if (y < today.getFullYear() - 3 || y > today.getFullYear() + 5 || date.getMonth() !== m - 1 || date.getDate() !== d) return;
+    found.set(date.getTime(), date);
+  };
+  for (const m of text.matchAll(/(?<!\d)(\d{2,4})\s?[./-]\s?(\d{1,2})\s?[./-]\s?(\d{1,2})(?!\d)/g)) add(m[1], m[2], m[3]);
+  for (const m of text.matchAll(/(?<!\d)(20\d{2})(\d{2})(\d{2})(?!\d)/g)) add(m[1], m[2], m[3]);
+  return [...found.values()].sort((a, b) => a - b);
+}
+async function readDate(out, btn) {
+  const img = dateImage();
+  if (!img) return;
+  btn.disabled = true;
+  out.textContent = ocrWorker ? '讀取中…' : '讀取中…（第一次使用要下載約 7MB）';
+  try {
+    const { data } = await (await getOcr()).recognize(img);
+    const dates = findDates(data.text);
+    if (!dates.length) {
+      out.textContent = '沒讀到日期。把日期移到框框中間、靠近一點並對焦清楚，再試一次。';
+      return;
+    }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const fmt = (d) => `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+    const days = (d) => Math.round((d - today) / 86400000);
+    const rel = (n) => (n > 0 ? `還有 ${n} 天` : n === 0 ? '就是今天' : `已過 ${-n} 天`);
+    const last = dates[dates.length - 1], n = days(last);
+    const verdict = n < 0 ? '🚫 已經過期，不要買' : n <= 1 ? '⚠️ 快到期了，要買就今天煮' : '👍 日期還沒到';
+    out.textContent = [
+      verdict,
+      `讀到：${dates.map((d) => `${fmt(d)}（${rel(days(d))}）`).join('、')}`,
+      dates.length > 1 && '最晚的日期通常是有效期限，較早的是製造或包裝日期。',
+      '數字可能讀錯，請再用眼睛確認一次。',
+    ].filter(Boolean).join('\n');
+  } catch (err) {
+    console.error(err);
+    out.textContent = `讀取失敗：${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function disclaimer(f) {
@@ -621,10 +753,38 @@ function disclaimer(f) {
   return p;
 }
 
+// ---------- 語音：唸出品項、外觀判斷與挑選重點（在市場兩手拿東西時用） ----------
+function speechText(f) {
+  const parts = [f.name];
+  if (!els.quality.hidden) parts.push(els.quality.querySelector('b')?.textContent.replace('外觀判斷：', '外觀看起來') ?? '');
+  if (f.checklist) parts.push(`買之前檢查：${f.checklist.join('；')}`);
+  else if (f.tips.look?.length) parts.push(`挑選重點：${f.tips.look.slice(0, 2).join('；')}`);
+  if (f.tips.avoid?.length) parts.push(`避開：${f.tips.avoid[0]}`);
+  return parts.filter(Boolean).join('。');
+}
+function stopSpeaking() {
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  els.speakBtn.textContent = '🔊';
+}
+els.speakBtn.onclick = () => {
+  const f = fruitById[tipsFor];
+  if (!f) return;
+  if (speechSynthesis.speaking) return stopSpeaking();
+  const u = new SpeechSynthesisUtterance(speechText(f).replace(/[（）]/g, '，'));
+  u.lang = 'zh-TW';
+  const voices = speechSynthesis.getVoices();
+  u.voice = voices.find((v) => v.lang === 'zh-TW') ?? voices.find((v) => /^zh/.test(v.lang)) ?? null;
+  u.rate = 1.05;
+  u.onend = u.onerror = () => { els.speakBtn.textContent = '🔊'; };
+  els.speakBtn.textContent = '⏹';
+  speechSynthesis.speak(u);
+};
+
 function showSearching(live) {
   tipsFor = null;
+  els.speakBtn.hidden = true;
+  stopSpeaking();
   hideQuality();
-  qualitySmooth = null;
   els.emoji.textContent = '🔍';
   els.name.textContent = live ? '把食材放進框框裡' : '認不太出來';
   els.meta.textContent = live ? '對準一種食材、光線充足會更準' : '可以點下方候選，或手動選擇';
@@ -807,22 +967,25 @@ els.listBtn.onclick = () => {
   filterList('');
   els.dialog.showModal();
 };
-els.grid.replaceChildren(...[['水果', FRUITS], ['蔬菜', VEGETABLES], ['魚、海鮮、肉、蛋', PROTEINS]].flatMap(([title, items]) => {
+els.grid.replaceChildren(...[['水果', FRUITS], ['蔬菜', VEGETABLES], ['魚、海鮮、肉、蛋、豆製品', PROTEINS]].flatMap(([title, items]) => {
   const h = document.createElement('h4');
   h.textContent = title;
   return [h, ...items.map((f) => {
     const b = document.createElement('button');
     b.value = f.id;
     b.dataset.name = f.name;
-    b.innerHTML = `<span>${f.emoji}</span>${f.name}`;
+    const peak = inSeason(f.season, thisMonth);
+    if (peak) b.dataset.peak = '1';
+    b.innerHTML = `<span>${f.emoji}</span>${f.name}${peak ? '<small class="peak">當季</small>' : ''}`;
     return b;
   })];
 }));
 
-// 清單搜尋：名稱包含輸入的字就顯示；都找不到時提供「上網查怎麼挑」
+// 清單搜尋：名稱包含輸入的字就顯示；都找不到時提供「上網查怎麼挑」。勾了「只看現在當季」就只顯示盛產期的品項
 const search = $('fruitSearch');
 function filterList(term) {
   const q = term.trim();
+  const peakOnly = !!$('seasonOnly')?.checked;
   let shownCount = 0;
   let heading = null, headingHasItems = false;
   for (const el of els.grid.children) {
@@ -832,16 +995,18 @@ function filterList(term) {
       headingHasItems = false;
       continue;
     }
-    const match = !q || el.dataset.name.includes(q);
+    const match = (!q || el.dataset.name.includes(q)) && (!peakOnly || !!el.dataset.peak);
     el.hidden = !match;
     if (match) { shownCount++; headingHasItems = true; }
   }
   if (heading) heading.hidden = !headingHasItems;
-  $('searchEmpty').hidden = shownCount > 0;
+  $('searchEmpty').hidden = shownCount > 0 || !q;
   $('searchTerm').textContent = q;
   $('searchWeb').href = `https://www.google.com/search?q=${encodeURIComponent(`${q} 怎麼挑`)}`;
 }
 search.addEventListener('input', () => filterList(search.value));
+$('seasonMonth').textContent = `${thisMonth} 月`;
+$('seasonOnly').addEventListener('change', () => filterList(search.value));
 // 在搜尋框按 Enter：只剩一個結果就直接選它，不要送出表單
 search.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;

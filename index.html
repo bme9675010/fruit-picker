@@ -46,6 +46,7 @@
           <h2 id="fruitName">把食材放進框框裡</h2>
           <div id="fruitMeta" class="meta">辨識中…</div>
         </div>
+        <button id="speakBtn" class="icon-btn" type="button" aria-label="唸出挑選重點" hidden>🔊</button>
       </div>
       <div id="quality" class="quality" role="status" hidden></div>
       <div id="candidates" class="chips"></div>
@@ -64,6 +65,7 @@
       <form method="dialog">
         <h3>選擇食材</h3>
         <input id="fruitSearch" class="search" type="search" placeholder="搜尋，例如：芭樂、菇、蝦" autocomplete="off" enterkeyhint="search">
+        <label class="season-toggle"><input id="seasonOnly" type="checkbox"> 🗓 只看現在當季（<span id="seasonMonth"></span>）</label>
         <p class="hint">選了之後可以按「記住這個畫面」，下次遇到類似的會認得更準（只存在這支手機）。</p>
         <div id="fruitGrid" class="grid"></div>
         <div id="searchEmpty" class="search-empty" hidden>

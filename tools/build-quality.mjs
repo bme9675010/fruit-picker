@@ -1,6 +1,6 @@
 // 產生外觀判斷用的文字特徵：每種蔬果的「新鮮／碰傷／腐爛」或「生／熟／過熟／腐爛」。
 // 輸出 ../quality{後綴}.json，每個向量以 int8＋base64 存（與 App 的 decodeVec 相同格式）。
-// 用法：node build-quality.mjs && MODEL=s1 node build-quality.mjs
+// 用法：node build-quality.mjs && MODEL=s1 node build-quality.mjs，接著 node rot-detector.mjs --write && MODEL=s1 node rot-detector.mjs --write
 import { writeFile } from 'node:fs/promises';
 import { AutoTokenizer, CLIPTextModelWithProjection } from '@huggingface/transformers';
 import { FRUITS, VEGETABLES, QUALITY } from '../fruits.js';
@@ -12,9 +12,10 @@ const LEAFY_LIKE = new Set([...LEAFY, 'cabbage', 'napa_cabbage', 'red_cabbage'])
 
 // 校準值（由 eval-quality.mjs 實測決定）：「碰傷」「腐爛」分數各減掉 bias，最高狀態機率 ≥ threshold 才顯示。
 // 目標是讓新鮮蔬果被誤判成壞掉的比例約 5% 以下。
+// 「爛了沒」影像分類器（rot-detector.mjs，之後要再執行一次 --write 加進來）抓腐爛比文字準，所以文字的 bias 調高，兩者合計誤報約 5%。
 const CALIBRATION = {
-  s1: { bias: { damaged: 4, rotten: 3 }, threshold: 0.6 },
-  s0: { bias: { damaged: 4, rotten: 3 }, threshold: 0.6 },
+  s1: { bias: { damaged: 6, rotten: 5 }, threshold: 0.6 },
+  s0: { bias: { damaged: 6, rotten: 5 }, threshold: 0.6 },
 };
 
 const tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);

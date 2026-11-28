@@ -12,6 +12,7 @@ const exists = (p) => access(p).then(() => true, () => false);
 
 const tf = JSON.parse(await readFile(here('./node_modules/@huggingface/transformers/package.json'), 'utf8'));
 const ort = JSON.parse(await readFile(here('./node_modules/onnxruntime-web/package.json'), 'utf8'));
+const tess = JSON.parse(await readFile(here('./node_modules/tesseract.js/package.json'), 'utf8'));
 
 const files = [
   [`./node_modules/@huggingface/transformers/dist/transformers.min.js`, `../vendor/transformers-${tf.version}.min.js`],
@@ -20,6 +21,10 @@ const files = [
     `./node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded${variant}.${ext}`,
     `../vendor/ort-${ort.version}/ort-wasm-simd-threaded${variant}.${ext}`,
   ])),
+  // 讀包裝日期用的 Tesseract.js（Apache-2.0）：只用支援 SIMD 的 LSTM 核心，與英數字辨識資料（tessdata best_int）
+  ...['tesseract.min.js', 'worker.min.js'].map((f) => [`./node_modules/tesseract.js/dist/${f}`, `../vendor/tesseract-${tess.version}/${f}`]),
+  [`./node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js`, `../vendor/tesseract-${tess.version}/tesseract-core-simd-lstm.wasm.js`],
+  [`./node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz`, `../vendor/tesseract-${tess.version}/eng.traineddata.gz`],
   // 主模型（S1）與輕量模型（S0）的影像模型，只需要 fp16 版本（加上 --models 才複製）
   ...(process.argv.includes('--models') ? ['mobileclip_s1', 'mobileclip_s0'] : []).flatMap((m) => ['config.json', 'preprocessor_config.json', 'onnx/vision_model_fp16.onnx'].map((f) => [
     `./node_modules/@huggingface/transformers/.cache/Xenova/${m}/${f}`,
@@ -33,4 +38,4 @@ for (const [from, to] of files) {
   await copyFile(here(from), here(to));
   console.log(to.replace('../', ''));
 }
-console.log(`\nTransformers.js ${tf.version}／ONNX Runtime ${ort.version}`);
+console.log(`\nTransformers.js ${tf.version}／ONNX Runtime ${ort.version}／Tesseract.js ${tess.version}`);
